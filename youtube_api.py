@@ -26,7 +26,7 @@ def get_comments(youtube, video_id, channel_id):
     # author = comment["snippet"]["authorDisplayName"]
     # text = comment["snippet"]["textDisplay"]
 
-    # print("Comment by %s: %s" % (author, text))
+    # print("Comment by : %s" % (author, text))
     # for y in comment["snippet"]:
     #   print (y, ':', comment["snippet"][y])
 
@@ -103,13 +103,13 @@ class Video:
 
         # relational
         self.channel_id = video['snippet']['channelId']
-        self.channel_title = video['channelTitle']
+        self.channel_title = video['snippet']['channelTitle']
 
 
 class Playlist:
     def __init__(self, playlist):
         self.published_at = playlist['snippet']['publishedAt']
-        if playlist['id']['playlistId'] is None:
+        if 'playlistId' not in playlist['id']:
             self.playlist_id = playlist['id']
         else:
             self.playlist_id = playlist['id']['playlistId']
@@ -118,7 +118,7 @@ class Playlist:
 
         # relational
         self.channel_id = playlist['snippet']['channelId']
-        self.channel_title = playlist['channelTitle']
+        self.channel_title = playlist['snippet']['channelTitle']
 
 
 class Comment:
@@ -133,7 +133,7 @@ class Comment:
         self.like_count = comment['snippet']['likeCount']
 
         # Relational Attributes:
-        self.video_id = comment['snippet']['videoId']
+        self.video_id = None
         self.author_channel_id = comment['snippet']['authorChannelId']['value']
         self.author_channel_url = comment['snippet']['authorChannelUrl']
         self.author_display_name = comment['snippet']['authorDisplayName']
@@ -204,16 +204,24 @@ class Youtube:
 
                 if search_result['id']['kind'] == 'youtube#video':
                     self.videos.append(Video(search_result))
-                    self.video_comments.append(get_comments(self.youtube, search_result['id']['videoId'], None))
+                    comments = get_comments(self.youtube, search_result['id']['videoId'], None)
+                    for item in comments:
+                        topLevelComment = item["snippet"]["topLevelComment"]
+                        comment = Comment(topLevelComment)
+                        comment.videoId = search_result['id']['videoId']
+                        self.video_comments.append(comment)
+                    
 
                 elif search_result['id']['kind'] == 'youtube#channel':
                     self.channels.append(Channel(search_result))
-                    self.video_comments.append(get_comments(self.youtube, None, search_result['id']['channelId']))
+                    comments = get_comments(self.youtube, None, search_result['id']['channelId'])
+                    for item in comments:
+                        comment = item["snippet"]["topLevelComment"]
+                        self.video_comments.append(Comment(comment))
 
                 elif search_result['id']['kind'] == 'youtube#playlist':
                     playlistId = search_result['id']['playlistId']
-                    self.playlists.append(
-                        '%s (%s)' % (search_result['snippet']['title'], playlistId))
+                    self.playlists.append(Playlist(search_result))
                     self.playlist_items_list_by_playlist_id(part='snippet,contentDetails',
                                                             maxResults=25,
                                                             playlistId=playlistId)
@@ -232,10 +240,42 @@ class Youtube:
             **kwargs
         ).execute()
 
-        self.playlists.append(response['items'])
+        for item in response['items']:
+            self.playlists.append(Playlist(item))
 
     def pretty_print(self):
-        print('Videos:\n', '\n'.join(self.videos), '\n')
-        print('Channels:\n', '\n'.join(self.channels), '\n')
-        print('Playlist:\n', '\n'.join(self.playlists), '\n')
-        print('Playlist:\n', '\n'.join(self.video_comments), '\n')
+        print('Videos:')
+        for video in self.videos:
+            print("\tvideoId: " + (video.video_id).encode("utf-8"))
+            print("\ttitle: " + (video.title).encode("utf-8"))
+            print("\tdescription: "+ (video.description).encode("utf-8"))
+            print("\tpublished at: "+ (video.published_at).encode("utf-8"))
+            print
+
+        print('Channels:')
+        for channel in self.channels:
+            print("\tchannelId: "+ (channel.channel_id).encode("utf-8"))
+            print("\ttitle: "+ (channel.channel_title).encode("utf-8"))
+            print("\tdescription: "+  (channel.description).encode("utf-8"))
+            print
+
+        print('Playlist:')
+        for playlist in self.playlists:
+            print("\tplaylistId: "+  (playlist.playlist_id).encode("utf-8"))
+            print("\ttitle: "+  (playlist.title).encode("utf-8"))
+            print("\tdescription: "+  (playlist.description).encode("utf-8"))
+            print("\tpublished at: "+  (playlist.published_at).encode("utf-8"))
+            print
+
+        print('Comments:\n')
+        for comment in self.video_comments:
+            if comment.video_id is not None:
+                print("\tvideoId: " + (comment.video_id).encode("utf-8"))
+            print("\tupdated_at: " + (comment.updated_at).encode("utf-8"))
+            print("\tpublished_at: " + (comment.published_at).encode("utf-8"))
+            print("\tview rating: " + (comment.view_rating).encode("utf-8"))
+            print("\tcan rate: " + str(comment.can_rate))
+            print("\ttext_original: " + (comment.text_original).encode("utf-8"))
+            print("\ttext_display: " + (comment.text_display).encode("utf-8"))
+            print("\tlike count: " + str(comment.like_count))
+            print
