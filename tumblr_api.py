@@ -63,3 +63,12 @@ class Tumblr:
         filter=""
     ):
         self.tumblr.client.tagged(tag, **params)  # TODO: put data in Post node objects
+
+    def export_data(
+            self,
+            format,
+            object_type_list,
+            file_name,
+            options=None
+    ):
+        pass # TODO: export specified data to
