@@ -14,7 +14,7 @@ class Tumblr:
         self,
         blog_hostname
     ):
-        self.tumblr.blog_info(blog_hostname) # TODO: put data into a Blog node object
+        print(self.tumblr.blog_info(blog_hostname))
 
     def fetch_tumblr_blog_following(
         self,
@@ -22,15 +22,19 @@ class Tumblr:
         limit=20,
         offset=0
     ):
-        self.tumblr.blog_following(blog_hostname) # TODO: put data in Blog node objects and Follow_blog edge objects
+        blogs = self.tumblr.blog_following(blog_hostname)['blogs']
+        for blog in blogs:
+            print(blog['name'])
 
-    def fetch_tumblr_blog_followers(
+    """def fetch_tumblr_blog_followers(
         self,
         blog_hostname,
         limit=20,
         offset=0
     ):
-        self.tumblr.followers(blog_hostname)  # TODO: put data in Blog node objects and Follow_blog edge objects
+        blogs = self.tumblr.blog_followers(blog_hostname)['blogs']
+        for blog in blogs:
+            print(blog['name'])"""
 
     def fetch_tumblr_posts_published(
         self,
@@ -41,7 +45,9 @@ class Tumblr:
         offset=0,
         before=0
     ):
-        self.tumblr.client.posts(blog_hostname, **params)  # TODO: put data in a Blog node object and Post node objects
+        posts = self.tumblr.posts(blog_hostname)['posts']
+        for post in posts:
+            print(post['summary'])
 
     def fetch_tumblr_posts_liked(
         self,
@@ -51,18 +57,20 @@ class Tumblr:
         before=0,
         after=0
     ):
-        self.tumblr.client.blog_likes(blog_hostname)
-        # TODO: put data in a Blog node object, Post node objects and Like_post edge objects
+        self.tumblr.blog_likes(blog_hostname)
 
     def fetch_tumblr_posts_tagged(
         self,
-        blog_hostname,
-        tag="",
+        tag,
+        blog_hostname="",
         limit=20,
         before=0,
         filter=""
     ):
-        self.tumblr.client.tagged(tag, **params)  # TODO: put data in Post node objects
+        #self.tumblr.tagged(tag, **params)
+        posts = self.tumblr.tagged(tag)
+        for post in posts:
+            print(post['blog_name'])
 
     def export_data(
             self,
@@ -74,7 +82,7 @@ class Tumblr:
         pass # TODO: export specified data to
 
 
-class Blog (BareboneNode):
+"""class Blog (BareboneNode):
     def __init__(
             self,
             title,
@@ -233,4 +241,4 @@ class Follow_blog(BareboneEdge):
             following_blog_id,
             followed_blog_id
     ):
-        BareboneEdge.__init__(self, following_blog_id, followed_blog_id)
+        BareboneEdge.__init__(self, following_blog_id, followed_blog_id)"""""
