@@ -1,4 +1,83 @@
 import praw
+import pandas as pd
+import pprint
+
+
+def create_subreddit_node(subreddit):
+    subreddit_node = {
+        "id": subreddit.id,
+        "display_name": subreddit.display_name,
+        "created": subreddit.created,
+        "description": subreddit.description,
+        "header_title": subreddit.header_title,
+        "subreddit_type": subreddit.subreddit_type,
+        "over18": subreddit.over18,
+        "subscribers": subreddit.subscribers,
+        "title": subreddit.title,
+        "url": "https://reddit.com" + subreddit.url,
+        "subreddit_type": subreddit.subreddit_type
+    }
+    return subreddit_node
+
+
+def create_submission_node(submission):
+    media_url = None
+    if submission.media is not None:
+        if "reddit_video" in submission.media:
+            media_url = submission.media["reddit_video"]["dash_url"]
+        elif "oembed" in submission.media:
+            html = submission.media["oembed"]["html"]
+            start = html.find("src=\"")
+            end = html.find("\"", start + 5)
+            media_url = html[start+5:end]
+
+    image_url = None
+    if submission.preview is not None:
+        if "images" in submission.preview:
+            if "source" in submission.preview["images"]:
+                image_url = submission.preview["images"]["source"]["url"]
+
+    submission_node = {
+        # this is the author of the submission
+        "subreddit_id": submission.author_fullname[3:],
+        # this is the subreddit the submission was posted to
+        "author_id": submission.subreddit_id[3:],
+        "submission_id": submission.id,
+        "created": submission.created,
+        "title": submission.title,
+        "url": submission.url,
+        "permalink": "https://reddit.com" + submission.permalink,
+        "upvote_ratio": submission.upvote_ratio,
+        "score": submission.score,
+        "selftext": submission.selftext,
+        "over_18": submission.over_18,
+        "media_url": media_url,
+        "image_url": image_url,
+        "author_name": submission.author.name,
+        "subreddit_name": submission.subreddit.display_name
+    }
+
+    return submission_node
+
+
+def create_redditor_node(redditor):
+    redditor_node = {
+        "id": redditor.fullname[3:],
+        "username": redditor.name
+    }
+    return redditor_node
+
+
+def create_comment_edge(comment):
+    comment_edge = {
+        "id": comment.id,
+        "Source": comment.parent_id[3:],  # submission_id
+        "Target": comment.author_fullname[3:],  # author_id
+        "text": comment.body,
+        "permalink": "https://reddit.com" + comment.permalink,
+        "score": comment.score
+    }
+    return comment_edge
 
 
 class Reddit:
@@ -9,7 +88,57 @@ class Reddit:
             user_agent=api["user_agent"]
         )
 
-    def fetch_reddit_submissions(
+    def fetch_subreddits_by_name(
+        self,
+        keyword,
+        limit=20,
+        nsfw=True,
+        exact=False
+    ):
+        subreddits = self.reddit.subreddits.search_by_name(
+            "t", include_nsfw=nsfw, exact=exact)
+
+        subreddits_list = []
+        submissions_list = []
+        redditors_list = []
+        comments_list = []
+
+        for subreddit in subreddits:
+            subreddits_list.append(create_subreddit_node(subreddit))
+
+        dataframes = {
+            "subreddits": pd.DataFrame(subreddits_list),
+            "submissions": pd.DataFrame(submissions_list),
+            "redditors": pd.DataFrame(redditors_list),
+            "comments": pd.DataFrame(comments_list)
+        }
+        return dataframes
+
+    def fetch_subreddits_by_topic(
+        self,
+        keyword,
+        limit=20
+    ):
+        subreddits = self.reddit.subreddits.search(
+            keyword, limit=limit)
+
+        subreddits_list = []
+        submissions_list = []
+        redditors_list = []
+        comments_list = []
+
+        for subreddit in subreddits:
+            subreddits_list.append(create_subreddit_node(subreddit))
+
+        dataframes = {
+            "subreddits": pd.DataFrame(subreddits_list),
+            "submissions": pd.DataFrame(submissions_list),
+            "redditors": pd.DataFrame(redditors_list),
+            "comments": pd.DataFrame(comments_list)
+        }
+        return dataframes
+
+    def fetch_subreddit_submissions(
         self,
         keyword="",
         subreddit_name="all",
@@ -17,14 +146,15 @@ class Reddit:
         sort="top",
         time_filter="month"
     ):
+        subreddits_list = []
+        submissions_list = []
+        redditors_list = []
+        comments_list = []
 
         if keyword == "":
             submissions = self.reddit.subreddit(subreddit_name)
 
-            if sort == "top":
-                submissions = submissions.top(
-                    limit=limit, time_filter=time_filter)
-            elif sort == "hot":
+            if sort == "hot":
                 submissions = submissions.hot(
                     limit=limit, time_filter=time_filter)
             elif sort == "new":
@@ -36,84 +166,234 @@ class Reddit:
             elif sort == "rising":
                 submissions = submissions.rising(
                     limit=limit, time_filter=time_filter)
+            else:
+                submissions = submissions.top(
+                    limit=limit, time_filter=time_filter)
         else:
             submissions = self.reddit.subreddit(subreddit_name).search(
                 keyword, sort=sort, time_filter=time_filter, limit=limit)
 
         for submission in submissions:
-            print submission.id
+            submissions_list.append(create_submission_node(submission))
 
-    def fetch_subreddits_by_topic(
-        self,
-        keyword,
-        limit=20
-    ):
-        subreddits = self.reddit.subreddits.search(
-            keyword, limit=limit)
-        for subreddit in subreddits:
-            print(subreddit)
-
-    def fetch_subreddits_by_name(
-        self,
-        keyword,
-        limit=20,
-        nsfw=True,
-        exact=False
-    ):
-        subreddits = self.reddit.subreddits.search_by_name(
-            "t", include_nsfw=nsfw, exact=exact)
-        for subreddit in subreddits:
-            print(subreddit)
-
-    def fetch_submission_top_level_comments(
-        self,
-        submission_id,
-        limit=20,
-        sort="top",
-        time_filter="month"
-    ):
-
-        submission = self.reddit.submission(id=submission_id, limit=limit)
-        submission.comment_sort = sort
-        if limit == None:
-            comments = list(submission.comments.replace_more(limit=None))
-        else:
-            comments = list(submisison.comments.replace_more(limit=limit))
-        for comment in comments:
-            print(comment.id)
+        dataframes = {
+            "subreddits": pd.DataFrame(subreddits_list),
+            "submissions": pd.DataFrame(submissions_list),
+            "redditors": pd.DataFrame(redditors_list),
+            "comments": pd.DataFrame(comments_list)
+        }
+        return dataframes
 
     def fetch_submission_comments(
         self,
         submission_id,
         limit=20,
         sort="top",
-        time_filter="month"
+        time_filter="month",
+        top_level=True
     ):
+
+        subreddits_list = []
+        submissions_list = []
+        redditors_list = []
+        comments_list = []
+
         submission = self.reddit.submission(id=submission_id)
+
         submission.comment_sort = sort
-        if limit == None:
-            comments = submission.comments.replace_more(limit=None)
+
+        if limit is None or limit > 32:
+            submission.comments.replace_more(limit=None)
         else:
-            comments = submission.comments.replace_more(limit=0)
+            submission.comments.replace_more(limit=limit)
+
+        i = 0
+        if top_level is True:
+            comments = submission.comments
+        else:
+            comments = submission.comments.list()
+
         for comment in comments:
-            print(comment.id)
+            if comment.author is None:
+                continue
+
+            comments_list.append(create_comment_edge(comment))
+            redditors_list.append(create_redditor_node(comment.author))
+
+            i += 1
+            if i == limit:
+                break
+
+        dataframes = {
+            "subreddits": pd.DataFrame(subreddits_list),
+            "submissions": pd.DataFrame(submissions_list),
+            "redditors": pd.DataFrame(redditors_list),
+            "comments": pd.DataFrame(comments_list)
+        }
+        return dataframes
 
     def fetch_redditor_comments(
         self,
         user_id,
-        api_credential,
         limit=20,
-        sort="top",
+        sort="new",
         time_filter="month"
     ):
-        pass
+        subreddits_list = []
+        submissions_list = []
+        redditors_list = []
+        comments_list = []
+
+        redditor = self.reddit.redditor(user_id)
+
+        if sort == "top":
+            comments = redditor.comments.top(
+                limit=limit, time_filter=time_filter)
+        elif sort == "hot":
+            comments = redditor.comments.hot(
+                limit=limit, time_filter=time_filter)
+        elif sort == "controversial":
+            comments = redditor.comments.controversial(
+                limit=limit, time_filter=time_filter)
+        else:
+            comments = redditor.comments.new(
+                limit=limit, time_filter=time_filter)
+
+        for comment in comments:
+            comments_list.append(create_comment_edge(comment))
+
+        dataframes = {
+            "subreddits": pd.DataFrame(subreddits_list),
+            "submissions": pd.DataFrame(submissions_list),
+            "redditors": pd.DataFrame(redditors_list),
+            "comments": pd.DataFrame(comments_list)
+        }
+        return dataframes
 
     def fetch_redditor_submissions(
         self,
         user_id,
-        api_credential,
         limit=20,
-        sort="top",
+        sort="new",
         time_filter="month"
     ):
-        pass
+
+        subreddits_list = []
+        submissions_list = []
+        redditors_list = []
+        comments_list = []
+
+        redditor = self.reddit.redditor(user_id)
+
+        if sort == "top":
+            submissions = redditor.submissions.top(
+                limit=limit, time_filter=time_filter)
+        elif sort == "hot":
+            submissions = redditor.submissions.hot(
+                limit=limit, time_filter=time_filter)
+        elif sort == "controversial":
+            submissions = redditor.submissions.controversial(
+                limit=limit, time_filter=time_filter)
+        else:
+            submissions = redditor.submissions.new(
+                limit=limit, time_filter=time_filter)
+
+        for submission in submissions:
+            submissions_list.append(create_submission_node(submission))
+
+        dataframes = {
+            "subreddits": pd.DataFrame(subreddits_list),
+            "submissions": pd.DataFrame(submissions_list),
+            "redditors": pd.DataFrame(redditors_list),
+            "comments": pd.DataFrame(comments_list)
+        }
+        return dataframes
+
+# class Redditor (BareboneNode):
+#     def __init__(
+#         self,
+#         id,
+#         name,
+#         created,
+#         link_karma,
+#         comment_karma
+#     ):
+#         BareboneNode.__init__(self, id)
+#         self.name = name
+#         self.created = created
+#         self.link_karma = link_karma
+#         self.comment_karma = comment_karma
+
+
+# class Submission (BareboneNode):
+#     def __init__(
+#         self,
+#         id,
+#         created,
+#         title,
+#         url,
+#         upvote_ratio,
+#         score,
+#         selftext,
+#         over_18,
+#         preview,
+#         media,
+#         author_fullname,
+#     ):
+#         BareboneNode.__init__(self, id)
+#         self.created = created
+#         self.title = title
+#         self.url = url
+#         self.upvote_ratio = upvote_ratio
+#         self.score = score
+#         self.selftext = selftext
+#         self.over_18 = over_18
+#         self.preview = preview
+#         self.media = media
+#         self.author_fullname = author_fullname
+
+
+# class Subreddit (BareboneNode):
+#     def __init__(
+#         self,
+#         id,
+#         display_name,
+#         active_user_count,
+#         created,
+#         description,
+#         header_title,
+#         public_description,
+#         subscribers,
+#         title,
+#         url,
+#         subreddit_type
+#     ):
+#         BareboneNode.__init__(self, id)
+#         self.display_name = display_name
+#         self.active_user_count = active_user_count
+#         self.created = created
+#         self.description = description
+#         self.header_title = header_title
+#         self.public_description = public_description
+#         self.subscribers = subscribers
+#         self.title = title
+#         self.url = url
+#         self.subreddit_type = subreddit_type
+
+
+# class Comment (BareboneEdge):
+#     def __init__(
+#         self,
+#         id,
+#         score,
+#         body,
+#         created,
+#         parent_id,
+#         author_fullname,
+#         subreddit_id
+#     ):
+#         BareboneEdge.__init__(self, id, parent_id, author_fullname)
+#         self.score = score
+#         self.body = body
+#         self.created = created
+#         self.subreddit_id = subreddit_id
