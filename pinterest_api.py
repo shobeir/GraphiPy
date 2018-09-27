@@ -1,5 +1,5 @@
 from pinterest import Pinterest
-
+import pandas as pd
 
 class Pinterest:
     def __init__(self, api):
@@ -16,7 +16,32 @@ class Pinterest:
         before=0,
         after=0
     ):
-        self.pinterest.search_boards(keyword)
+        board_nodes = []
+        user_nodes = []
+        board_user_edges = []
+        boards_result = self.pinterest.search_boards(keyword)
+        for board in boards_result:
+            board_node = {'id': board['id'],
+                          'name': board['name'],
+                          'description': board['description'],
+                          'pin_count': board['pin_count']
+                          }
+            user_node = {'id': board['owner']['id'],
+                         'username': board['owner']['username'],
+                         'full_name': board['owner']['full_name']
+                        }
+            board_nodes.append(board_node)
+            user_nodes.append(user_node)
+            board_user_edges.append('Source': board['id'],
+                                   'Target': board['owner']['id'])
+
+        board_nodes_df = pd.DataFrame(board_nodes)
+        board_user_edges_df = pd.DataFrame(board_user_edges)
+        user_nodes_df = pd.DataFrame(user_nodes)
+        board_nodes_df.to_csv("1.csv", encoding='UTF-8', index=False)
+        board_user_edges_df.to_csv("2.csv", encoding='UTF-8', index=False)
+        user_nodes_df.to_csv("3.csv", encoding='UTF-8', index=False)
+
 
     def fetch_pinterest_pins(
         self,
@@ -25,7 +50,42 @@ class Pinterest:
         before=0,
         after=0
     ):
-        self.pinterest.search_pins(keyword)
+        pin_nodes = []
+        board_nodes = []
+        user_nodes = []
+        pin_board_edges = []
+        pin_user_edges = []
+        pins_result = self.pinterest.search_pins(keyword)
+        for pin in pins_result:
+            pin_node = {'id' : pin['id'],
+                        'name': pin['rich_summary']['display_name'],
+                        'description': pin['rich_summary']['display_description'],
+                        'created_at': pin['created_at']
+                        }
+            board_node = {'id' : pin['board']['id'],
+                          'name': pin['board']['name'].
+                        }
+            user_node = user_node = {'id': pin['pinner']['id'],
+                        'username': pin['pinner']['username']
+                        }
+            pin_nodes.append(pin_node)
+            board_nodes.append(board_node)
+            user_nodes.append(user_node)
+            pin_board_edges.append('Source': pin['id'],
+                                   'Target': pin['board']['id'])
+            pin_user_edges.append('Source': pin['id'],
+                                  'Target': pin['pinner']['id'])
+        
+        pin_nodes_df = pd.DataFrame(pin_nodes)
+        pin_board_edges_df = pd.DataFrame(pin_board_edges)
+        board_nodes_df = pd.DataFrame(board_nodes)
+        user_nodes_df = pd.DataFrame(user_nodes)
+        pin_user_edges_df = pf.DataFrame(pin_user_edges)
+        pin_nodes_df.to_csv("1.csv", encoding='UTF-8', index=False)
+        pin_board_edges_df.to_csv("2.csv", encoding='UTF-8', index=False)
+        board_nodes_df.to_csv("3.csv", encoding='UTF-8', index=False)
+        user_nodes_df.to_csv("4.csv", encoding='UTF-8', index=False)
+        pin_user_edges_df.to_csv("5.csv", encoding='UTF-8', index=False)
 
     def fetch_pinterest_users(
         self,
@@ -34,8 +94,18 @@ class Pinterest:
         before=0,
         after=0
     ):
-        self.pinterest.search_users(keyword)
-
+        user_nodes = []
+        users_result = self.pinterest.search_users(keyword)
+        for user in users_result:
+            user_node = {'id' : user['id'],
+                        'name': user['username'],
+                        'full_name': user['full_name']
+            user_nodes.append(user_node)
+        
+        user_nodes_df = pd.DataFrame(user_nodes)
+        user_nodes_df.to_csv("1.csv", encoding='UTF-8', index=False)
+        
+            
     def export_data(
         self,
         format,
