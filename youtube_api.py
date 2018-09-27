@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from Queue import Queue
 
 import httplib2
 import os
@@ -21,16 +22,6 @@ def get_comments(youtube, video_id, channel_id):
         channelId=channel_id,
         textFormat="plainText"
     ).execute()
-
-    # for item in results["items"]:
-    # comment = item["snippet"]["topLevelComment"]
-    # author = comment["snippet"]["authorDisplayName"]
-    # text = comment["snippet"]["textDisplay"]
-
-    # print("Comment by : %s" % (author, text))
-    # for y in comment["snippet"]:
-    #   print (y, ':', comment["snippet"][y])
-
     return results["items"]
 
 
@@ -146,8 +137,10 @@ def parse_comment_to_node(comment):
             'view_rating': comment['snippet']['viewerRating'],
             'can_rate': comment['snippet']['canRate'],
             'text_original': comment['snippet']['textOriginal'],
-            'text_display': comment['snippet']['textDisplay'],
-            'like_count': comment['snippet']['likeCount']}
+            # text_display is the label
+            'Label': comment['snippet']['textDisplay'],
+            'like_count': comment['snippet']['likeCount'],
+            'Id': comment['id']}
 
 
 class Youtube:
@@ -207,40 +200,60 @@ class Youtube:
         video_nodes = []
         video_edges = []
         channel_nodes = []
-        # video_comments = []
+        video_comments_nodes = []
+        comment_user_edges = []
+        comment_reply_edges = []
 
-        try:
-            for search_result in search_response.get('items', []):
-                if search_result['id']['kind'] == 'youtube#video':
-                    video_id = search_result['id']['videoId']
-                    video_node = {'published_at': search_result['snippet']['publishedAt'],
-                                  'video_id': search_result['id']['videoId'],
-                                  'title': search_result['snippet']['title'],
-                                  'description': search_result['snippet']['description']}
-                    video_nodes.append(video_node)
+        for search_result in search_response.get('items', []):
+            if search_result['id']['kind'] == 'youtube#video':
+                video_id = search_result['id']['videoId']
+                video_node = {'published_at': search_result['snippet']['publishedAt'],
+                              # video_id is Id, title is Label
+                              'Id': search_result['id']['videoId'],
+                              'Label': search_result['snippet']['title'],
+                              'description': search_result['snippet']['description']}
+                video_nodes.append(video_node)
 
-                    video_edges.append({'Source': search_result['snippet']['channelId'],
-                                        'Target': video_id})
+                video_edges.append({'Source': search_result['snippet']['channelId'],
+                                    'Target': video_id})
 
-                    channel_nodes.append({'channel_id': search_result['snippet']['channelId'],
-                                          'channel_title': search_result['snippet']['channelTitle']})
+                # channel id is Id, title is Label
+                channel_nodes.append({'Id': search_result['snippet']['channelId'],
+                                      'Label': search_result['snippet']['channelTitle']})
 
-                    # video_comments.append(self.fetch_video_comment(video_id))
+                try:
+                    video_comments_dic = self.fetch_video_comments(video_id)
+                    video_comments_nodes = video_comments_dic['comment_node']
+                    comment_user_edges = video_comments_dic['comment_user_edges']
+                    comment_reply_edges = video_comments_dic['comment_reply_edges']
+                except HttpError as e:
+                    print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
 
-        except HttpError as e:
-            print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+
+
 
         video_nodes_df = pd.DataFrame(video_nodes)
         video_edges_df = pd.DataFrame(video_edges)
         channel_nodes_df = pd.DataFrame(channel_nodes)
+        video_comments_nodes_df = pd.DataFrame(video_comments_nodes)
+        comment_reply_edges_df = pd.DataFrame(comment_reply_edges)
+        comment_user_edges_df = pd.DataFrame(comment_user_edges)
+
         video_nodes_df.to_csv("1.csv", encoding='UTF-8', index=False)
         video_edges_df.to_csv("2.csv", encoding='UTF-8', index=False)
         channel_nodes_df.to_csv("3.csv", encoding='UTF-8', index=False)
+        video_comments_nodes_df.to_csv("4.csv", encoding='UTF-8', index=False)
+        comment_reply_edges_df.to_csv("5.csv", encoding='UTF-8', index=False)
+        comment_user_edges_df.to_csv("6.csv", encoding='UTF-8', index=False)
+
         print video_nodes_df
         print video_edges_df
         print channel_nodes_df
+        print video_comments_nodes_df
+        print comment_reply_edges_df
+        print comment_user_edges_df
 
-    def fetch_video_comment(self, video_id):
+    def fetch_video_comments(self, video_id):
         comment_nodes = []
         comment_user_edges = []
         comment_reply_edges = []
@@ -248,17 +261,41 @@ class Youtube:
         for comment_thread in comment_threads:
             top_level_comment = comment_thread['snippet']['topLevelComment']
 
-            comment_user_edge = {'comment_id': top_level_comment['id'],
-                                 'channel_id': comment_thread['snippet']['authorChannelId']['value'],
-                                 'channel_url': comment_thread['snippet']['authorChannelUrl'],
-                                 'author_display_name': comment_thread['snippet']['authorDisplayName']}
+            # Source is channel Id, target is comment Id
+            comment_user_edge = {'Target': top_level_comment['id'],
+                                 'Source': top_level_comment['snippet']['authorChannelId']['value'],
+                                 'channel_url': top_level_comment['snippet']['authorChannelUrl'],
+                                 'author_display_name': top_level_comment['snippet']['authorDisplayName']}
             comment_user_edges.append(comment_user_edge)
 
             top_level_comment_node = parse_comment_to_node(top_level_comment)
             comment_nodes.append(top_level_comment_node)
 
-            replies = top_level_comment['replies']['comments']
-        pass
+            if 'replies' in top_level_comment:
+                replies = top_level_comment['replies']['comments']
+                for reply in replies:
+                    # Add reply (to top level comment) nodes
+                    comment_nodes.append(parse_comment_to_node(reply))
+                    # Add Edge
+                    comment_reply_edge = {'Target': reply['snippet']['parentId'],
+                                          'Source': reply['snippet']['id']}
+                    reply_user_edge = {'Target': reply['snippet']['id'],
+                                       'Source': reply['snippet']['authorChannelId']['value'],
+                                       'channel_url': reply['snippet']['authorChannelUrl'],
+                                       'author_display_name': reply['snippet']['authorDisplayName']}
+                    comment_reply_edges += comment_reply_edge
+                    comment_user_edges += reply_user_edge
+
+        return {'comment_node': comment_nodes,
+                'comment_user_edges': comment_user_edges,
+                'comment_reply_edges': comment_reply_edges}
+
+    def fetch_channel(self, options):
+        search_response = self.youtube.search().list(
+            q=options.q,
+            part='id,snippet',
+            maxResults=options.max_results
+        ).execute()
 
     def youtube_search(self, options):
 
@@ -340,15 +377,15 @@ class Youtube:
             print("\tpublished at: " + (playlist.published_at).encode("utf-8"))
             print
 
-            # print('Comments:\n')
-            # for comment in self.video_comments:
-            #     if comment.video_id is not None:
-            #         print("\tvideoId: " + (comment.video_id).encode("utf-8"))
-            #     print("\tupdated_at: " + (comment.updated_at).encode("utf-8"))
-            #     print("\tpublished_at: " + (comment.published_at).encode("utf-8"))
-            #     print("\tview rating: " + (comment.view_rating).encode("utf-8"))
-            #     print("\tcan rate: " + str(comment.can_rate))
-            #     print("\ttext_original: " + (comment.text_original).encode("utf-8"))
-            #     print("\ttext_display: " + (comment.text_display).encode("utf-8"))
-            #     print("\tlike count: " + str(comment.like_count))
-            #     print
+        print('Comments:\n')
+        for comment in self.video_comments:
+            if comment.video_id is not None:
+                print("\tvideoId: " + (comment.video_id).encode("utf-8"))
+            print("\tupdated_at: " + (comment.updated_at).encode("utf-8"))
+            print("\tpublished_at: " + (comment.published_at).encode("utf-8"))
+            print("\tview rating: " + (comment.view_rating).encode("utf-8"))
+            print("\tcan rate: " + str(comment.can_rate))
+            print("\ttext_original: " + (comment.text_original).encode("utf-8"))
+            print("\ttext_display: " + (comment.text_display).encode("utf-8"))
+            print("\tlike count: " + str(comment.like_count))
+            print
