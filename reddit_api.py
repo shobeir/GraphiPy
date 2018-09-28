@@ -6,6 +6,8 @@ import pprint
 def create_subreddit_node(subreddit):
     subreddit_node = {
         "id": subreddit.id,
+        "label_attribute": "subreddit",
+        "label": subreddit.display_name_prefixed,
         "display_name": subreddit.display_name,
         "created": subreddit.created,
         "description": subreddit.description,
@@ -39,16 +41,18 @@ def create_submission_node(submission):
 
     submission_node = {
         # this is the author of the submission
-        "subreddit_id": submission.author_fullname[3:],
+        "Source": submission.author_fullname[3:],
         # this is the subreddit the submission was posted to
-        "author_id": submission.subreddit_id[3:],
-        "submission_id": submission.id,
+        "Target": submission.subreddit_id[3:],
+        "label_attribute": "submission",
+        "label": "submission_" + submission.id,
+        "id": submission.id,
         "created": submission.created,
         "title": submission.title,
         "url": submission.url,
         "permalink": "https://reddit.com" + submission.permalink,
         "upvote_ratio": submission.upvote_ratio,
-        "score": submission.score,
+        "upvotes": submission.score,
         "selftext": submission.selftext,
         "over_18": submission.over_18,
         "media_url": media_url,
@@ -63,7 +67,13 @@ def create_submission_node(submission):
 def create_redditor_node(redditor):
     redditor_node = {
         "id": redditor.fullname[3:],
-        "username": redditor.name
+        "label_attribute": "redditor",
+        "label": "u/" + redditor.name,
+        "username": redditor.name,
+        "created": redditor.created,
+        "link_karma": redditor.link_karma,
+        "comment_karma": redditor.comment_karma,
+        "upvotes": redditor.link_karma + redditor.comment_karma
     }
     return redditor_node
 
@@ -71,11 +81,13 @@ def create_redditor_node(redditor):
 def create_comment_edge(comment):
     comment_edge = {
         "id": comment.id,
-        "Source": comment.parent_id[3:],  # submission_id
-        "Target": comment.author_fullname[3:],  # author_id
+        "label_attribute": "comment",
+        "label": "comment_" + comment.id,
+        "Target": comment.parent_id[3:],  # submission_id
+        "Source": comment.author_fullname[3:],  # author_id
         "text": comment.body,
         "permalink": "https://reddit.com" + comment.permalink,
-        "score": comment.score
+        "upvotes": comment.score
     }
     return comment_edge
 
@@ -87,6 +99,11 @@ class Reddit:
             client_secret=api["client_secret"],
             user_agent=api["user_agent"]
         )
+
+    # def test(self):
+    #     redditor = self.reddit.redditor("1w72")
+    #     print(redditor.link_karma)
+    #     pprint.pprint(vars(redditor))
 
     def fetch_subreddits_by_name(
         self,
@@ -175,6 +192,8 @@ class Reddit:
 
         for submission in submissions:
             submissions_list.append(create_submission_node(submission))
+            subreddits_list.append(create_subreddit_node(submission.subreddit))
+            redditors_list.append(create_redditor_node(submission.author))
 
         dataframes = {
             "subreddits": pd.DataFrame(subreddits_list),
@@ -234,7 +253,7 @@ class Reddit:
 
     def fetch_redditor_comments(
         self,
-        user_id,
+        username,
         limit=20,
         sort="new",
         time_filter="month"
@@ -244,7 +263,7 @@ class Reddit:
         redditors_list = []
         comments_list = []
 
-        redditor = self.reddit.redditor(user_id)
+        redditor = self.reddit.redditor(username)
 
         if sort == "top":
             comments = redditor.comments.top(
@@ -272,7 +291,7 @@ class Reddit:
 
     def fetch_redditor_submissions(
         self,
-        user_id,
+        username,
         limit=20,
         sort="new",
         time_filter="month"
@@ -283,7 +302,7 @@ class Reddit:
         redditors_list = []
         comments_list = []
 
-        redditor = self.reddit.redditor(user_id)
+        redditor = self.reddit.redditor(username)
 
         if sort == "top":
             submissions = redditor.submissions.top(
