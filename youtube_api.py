@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import json
 from Queue import Queue
 
 import httplib2
@@ -17,7 +18,7 @@ from googleapiclient.errors import HttpError
 
 def get_comments(youtube, video_id, channel_id):
     results = youtube.commentThreads().list(
-        part="snippet",
+        part="snippet,replies",
         videoId=video_id,
         channelId=channel_id,
         textFormat="plainText"
@@ -190,6 +191,28 @@ class Youtube:
             doc = f.read()
             return build_from_document(doc, http=credentials.authorize(httplib2.Http()))
 
+    def create_node_by_channel_id(self, channel_id):
+        response = self.youtube.channels().list(
+            id=channel_id,
+            part='snippet,contentDetails,statistics'
+        ).execute()
+
+        channel = response['items'][0]
+        channel_node = {"Id": channel_id,
+                        "Label": channel['snippet']['title'],
+                        "description": channel['snippet']['description'],
+                        "published_at": channel['snippet']['publishedAt'],
+                        "view_count": channel['statistics']['viewCount'],
+                        "comment_count": channel['statistics']['commentCount'],
+                        "hidden_subscriber_count": channel['statistics']['hiddenSubscriberCount'],
+                        "video_count": channel['statistics']['videoCount']}
+
+        if not channel['statistics']['hiddenSubscriberCount']:
+            channel_node["subscriber_count"] = channel['statistics']['subscriberCount']
+        if 'customUrl' in channel:
+            channel_node["custom_url"] = channel['snippet']['customUrl']
+        return channel_node
+
     def fetch_video(self, options):
         search_response = self.youtube.search().list(
             q=options.q,
@@ -200,9 +223,10 @@ class Youtube:
         video_nodes = []
         video_edges = []
         channel_nodes = []
-        video_comments_nodes = []
-        comment_user_edges = []
-        comment_reply_edges = []
+        # video_comments_nodes = []
+        # comment_user_edges = []
+        # comment_reply_edges = []
+        # comment_video_edges = []
 
         for search_result in search_response.get('items', []):
             if search_result['id']['kind'] == 'youtube#video':
@@ -218,77 +242,104 @@ class Youtube:
                                     'Target': video_id})
 
                 # channel id is Id, title is Label
-                channel_nodes.append({'Id': search_result['snippet']['channelId'],
-                                      'Label': search_result['snippet']['channelTitle']})
+                channel_node = self.create_node_by_channel_id(search_result['snippet']['channelId'])
+                channel_nodes.append(channel_node)
 
-                try:
-                    video_comments_dic = self.fetch_video_comments(video_id)
-                    video_comments_nodes = video_comments_dic['comment_node']
-                    comment_user_edges = video_comments_dic['comment_user_edges']
-                    comment_reply_edges = video_comments_dic['comment_reply_edges']
-                except HttpError as e:
-                    print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
-
-
-
+                # try:
+                #     video_comments_dic = self.fetch_video_comments(video_id)
+                #     video_comments_nodes += video_comments_dic['comment_nodes']
+                #     comment_user_edges += video_comments_dic['comment_user_edges']
+                #     comment_reply_edges += video_comments_dic['comment_reply_edges']
+                #     channel_nodes += video_comments_dic['channel_nodes']
+                #     comment_video_edges += video_comments_dic['comment_video_edges']
+                # except HttpError as e:
+                #     print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
 
         video_nodes_df = pd.DataFrame(video_nodes)
         video_edges_df = pd.DataFrame(video_edges)
         channel_nodes_df = pd.DataFrame(channel_nodes)
-        video_comments_nodes_df = pd.DataFrame(video_comments_nodes)
-        comment_reply_edges_df = pd.DataFrame(comment_reply_edges)
-        comment_user_edges_df = pd.DataFrame(comment_user_edges)
+        # video_comments_nodes_df = pd.DataFrame(video_comments_nodes)
+        # comment_reply_edges_df = pd.DataFrame(comment_reply_edges)
+        # comment_user_edges_df = pd.DataFrame(comment_user_edges)
+        # comment_video_edges_df = pd.DataFrame(comment_video_edges)
 
         video_nodes_df.to_csv("1.csv", encoding='UTF-8', index=False)
         video_edges_df.to_csv("2.csv", encoding='UTF-8', index=False)
         channel_nodes_df.to_csv("3.csv", encoding='UTF-8', index=False)
-        video_comments_nodes_df.to_csv("4.csv", encoding='UTF-8', index=False)
-        comment_reply_edges_df.to_csv("5.csv", encoding='UTF-8', index=False)
-        comment_user_edges_df.to_csv("6.csv", encoding='UTF-8', index=False)
+        # video_comments_nodes_df.to_csv("4.csv", encoding='UTF-8', index=False)
+        # comment_reply_edges_df.to_csv("5.csv", encoding='UTF-8', index=False)
+        # comment_user_edges_df.to_csv("6.csv", encoding='UTF-8', index=False)
+        # comment_video_edges_df.to_csv("7.csv", encoding='UTF-8', index=False)
 
         print video_nodes_df
         print video_edges_df
         print channel_nodes_df
-        print video_comments_nodes_df
-        print comment_reply_edges_df
-        print comment_user_edges_df
+        # print video_comments_nodes_df
+        # print comment_reply_edges_df
+        # print comment_user_edges_df
+        # print comment_video_edges_df
+
+        return {"video_nodes_df": video_nodes_df,
+                "video_edges_df": video_edges_df,
+                "channel_nodes_df": channel_nodes_df}
+                # "video_comments_nodes_df": video_comments_nodes_df,
+                # "comment_reply_edges_df": comment_reply_edges_df,
+                # "comment_user_edges_df": comment_user_edges_df,
+                # "comment_video_edges_df": comment_video_edges_df}
 
     def fetch_video_comments(self, video_id):
         comment_nodes = []
         comment_user_edges = []
         comment_reply_edges = []
+        comment_video_edges = []
+        channel_nodes = []
         comment_threads = get_comments(self.youtube, video_id, None)
         for comment_thread in comment_threads:
             top_level_comment = comment_thread['snippet']['topLevelComment']
-
             # Source is channel Id, target is comment Id
             comment_user_edge = {'Target': top_level_comment['id'],
-                                 'Source': top_level_comment['snippet']['authorChannelId']['value'],
-                                 'channel_url': top_level_comment['snippet']['authorChannelUrl'],
-                                 'author_display_name': top_level_comment['snippet']['authorDisplayName']}
+                                 'Source': top_level_comment['snippet']['authorChannelId']['value']}
             comment_user_edges.append(comment_user_edge)
+            channel_nodes.append(self.create_node_by_channel_id(top_level_comment['snippet']['authorChannelId']['value']))
 
             top_level_comment_node = parse_comment_to_node(top_level_comment)
             comment_nodes.append(top_level_comment_node)
 
-            if 'replies' in top_level_comment:
-                replies = top_level_comment['replies']['comments']
+            comment_video_edges.append({'Target': video_id,
+                                        'Source': top_level_comment['id']})
+
+            if 'replies' in comment_thread:
+                replies = comment_thread['replies']['comments']
                 for reply in replies:
                     # Add reply (to top level comment) nodes
                     comment_nodes.append(parse_comment_to_node(reply))
                     # Add Edge
                     comment_reply_edge = {'Target': reply['snippet']['parentId'],
-                                          'Source': reply['snippet']['id']}
-                    reply_user_edge = {'Target': reply['snippet']['id'],
+                                          'Source': reply['id']}
+                    reply_user_edge = {'Target': reply['id'],
                                        'Source': reply['snippet']['authorChannelId']['value'],
                                        'channel_url': reply['snippet']['authorChannelUrl'],
                                        'author_display_name': reply['snippet']['authorDisplayName']}
-                    comment_reply_edges += comment_reply_edge
-                    comment_user_edges += reply_user_edge
+                    comment_reply_edges.append(comment_reply_edge)
+                    comment_user_edges.append(reply_user_edge)
 
-        return {'comment_node': comment_nodes,
-                'comment_user_edges': comment_user_edges,
-                'comment_reply_edges': comment_reply_edges}
+        comment_nodes_df = pd.DataFrame(comment_nodes)
+        channel_nodes_df = pd.DataFrame(channel_nodes)
+        comment_user_edges_df = pd.DataFrame(comment_user_edges)
+        comment_reply_edges_df = pd.DataFrame(comment_reply_edges)
+        comment_video_edges_df = pd.DataFrame(comment_video_edges)
+
+        print comment_nodes_df
+        print channel_nodes_df
+        print comment_user_edges_df
+        print comment_reply_edges_df
+        print comment_video_edges_df
+
+        return {'comment_nodes_df': comment_nodes_df,
+                'channel_nodes_df': channel_nodes_df,
+                'comment_user_edges_df': comment_user_edges_df,
+                'comment_reply_edges_df': comment_reply_edges_df,
+                'comment_video_edges_df': comment_video_edges_df}
 
     def fetch_channel(self, options):
         search_response = self.youtube.search().list(
