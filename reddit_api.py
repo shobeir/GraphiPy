@@ -24,7 +24,7 @@ def create_subreddit_node(subreddit):
 
 def create_submission_node(submission):
     media_url = None
-    if submission.media is not None:
+    if submission.media:
         if "reddit_video" in submission.media:
             media_url = submission.media["reddit_video"]["dash_url"]
         elif "oembed" in submission.media:
@@ -34,19 +34,22 @@ def create_submission_node(submission):
             media_url = html[start+5:end]
 
     image_url = None
-    if submission.preview is not None:
-        if "images" in submission.preview:
-            if "source" in submission.preview["images"]:
-                image_url = submission.preview["images"]["source"]["url"]
+    try:
+        if submission.preview:
+            if "images" in submission.preview:
+                if "source" in submission.preview["images"]:
+                    image_url = submission.preview["images"]["source"]["url"]
+    except AttributeError:
+        pass
 
     submission_node = {
+        "id": submission.id,
         # this is the author of the submission
-        "Source": submission.author_fullname[3:],
+        "author_id": submission.author_fullname[3:],
         # this is the subreddit the submission was posted to
-        "Target": submission.subreddit_id[3:],
+        "subreddit_id": submission.subreddit_id[3:],
         "label_attribute": "submission",
         "label": "submission_" + submission.id,
-        "id": submission.id,
         "created": submission.created,
         "title": submission.title,
         "url": submission.url,
@@ -78,18 +81,29 @@ def create_redditor_node(redditor):
     return redditor_node
 
 
-def create_comment_edge(comment):
-    comment_edge = {
+def create_comment_node(comment):
+    comment_node = {
         "id": comment.id,
         "label_attribute": "comment",
         "label": "comment_" + comment.id,
-        "Target": comment.parent_id[3:],  # submission_id
-        "Source": comment.author_fullname[3:],  # author_id
+        "parent_id": comment.parent_id[3:],  # submission_id
+        "author_id": comment.author_fullname[3:],  # author_id
+        "submission_id": comment.link_id[3:],
+        "subreddit_id": comment.subreddit_id[3:],
         "text": comment.body,
         "permalink": "https://reddit.com" + comment.permalink,
         "upvotes": comment.score
     }
-    return comment_edge
+    return comment_node
+
+
+def create_edge(source, target):
+    edge = {
+        "Source": source,
+        "Target": target,
+        "Type": "undirected"
+    }
+    return edge
 
 
 class Reddit:
@@ -100,10 +114,16 @@ class Reddit:
             user_agent=api["user_agent"]
         )
 
-    # def test(self):
-    #     redditor = self.reddit.redditor("1w72")
-    #     print(redditor.link_karma)
-    #     pprint.pprint(vars(redditor))
+    def test(self):
+
+        submission = self.reddit.submission(id="9jcfw2")
+        print(submission.title)
+        pprint.pprint(vars(submission))
+        # redditor = self.reddit.redditor("spez")
+        # comments = redditor.comments.top(limit=1)
+        # for comment in comments:
+        #     print(comment.body)
+        #     pprint.pprint(vars(comment))
 
     def fetch_subreddits_by_name(
         self,
@@ -119,6 +139,8 @@ class Reddit:
         submissions_list = []
         redditors_list = []
         comments_list = []
+        submission_edges = []
+        comment_edges = []
 
         for subreddit in subreddits:
             subreddits_list.append(create_subreddit_node(subreddit))
@@ -127,7 +149,9 @@ class Reddit:
             "subreddits": pd.DataFrame(subreddits_list),
             "submissions": pd.DataFrame(submissions_list),
             "redditors": pd.DataFrame(redditors_list),
-            "comments": pd.DataFrame(comments_list)
+            "comments": pd.DataFrame(comments_list),
+            "submission_edges": pd.DataFrame(submission_edges),
+            "comment_edges": pd.DataFrame(comment_edges)
         }
         return dataframes
 
@@ -143,6 +167,8 @@ class Reddit:
         submissions_list = []
         redditors_list = []
         comments_list = []
+        submission_edges = []
+        comment_edges = []
 
         for subreddit in subreddits:
             subreddits_list.append(create_subreddit_node(subreddit))
@@ -151,7 +177,9 @@ class Reddit:
             "subreddits": pd.DataFrame(subreddits_list),
             "submissions": pd.DataFrame(submissions_list),
             "redditors": pd.DataFrame(redditors_list),
-            "comments": pd.DataFrame(comments_list)
+            "comments": pd.DataFrame(comments_list),
+            "submission_edges": pd.DataFrame(submission_edges),
+            "comment_edges": pd.DataFrame(comment_edges)
         }
         return dataframes
 
@@ -167,6 +195,8 @@ class Reddit:
         submissions_list = []
         redditors_list = []
         comments_list = []
+        submission_edges = []
+        comment_edges = []
 
         if keyword == "":
             submissions = self.reddit.subreddit(subreddit_name)
@@ -191,15 +221,23 @@ class Reddit:
                 keyword, sort=sort, time_filter=time_filter, limit=limit)
 
         for submission in submissions:
-            submissions_list.append(create_submission_node(submission))
-            subreddits_list.append(create_subreddit_node(submission.subreddit))
             redditors_list.append(create_redditor_node(submission.author))
+
+            submissions_list.append(create_submission_node(submission))
+            submission_edges.append(create_edge(
+                submission.id, submission.subreddit.id))
+            submission_edges.append(create_edge(
+                submission.author.fullname[3:], submission.id))
+
+        subreddits_list.append(create_subreddit_node(submission.subreddit))
 
         dataframes = {
             "subreddits": pd.DataFrame(subreddits_list),
             "submissions": pd.DataFrame(submissions_list),
             "redditors": pd.DataFrame(redditors_list),
-            "comments": pd.DataFrame(comments_list)
+            "comments": pd.DataFrame(comments_list),
+            "submission_edges": pd.DataFrame(submission_edges),
+            "comment_edges": pd.DataFrame(comment_edges)
         }
         return dataframes
 
@@ -209,13 +247,15 @@ class Reddit:
         limit=20,
         sort="top",
         time_filter="month",
-        top_level=True
+        top_level=False
     ):
 
         subreddits_list = []
         submissions_list = []
         redditors_list = []
         comments_list = []
+        submission_edges = []
+        comment_edges = []
 
         submission = self.reddit.submission(id=submission_id)
 
@@ -236,18 +276,34 @@ class Reddit:
             if comment.author is None:
                 continue
 
-            comments_list.append(create_comment_edge(comment))
             redditors_list.append(create_redditor_node(comment.author))
+
+            comments_list.append(create_comment_node(comment))
+            comment_edges.append(create_edge(
+                comment.id, comment.parent_id[3:]))
+            comment_edges.append(create_edge(
+                comment.author.fullname[3:], comment.id))
 
             i += 1
             if i == limit:
                 break
 
+        # pprint.pprint(vars(submission))
+        submissions_list.append(create_submission_node(submission))
+        submission_edges.append(create_edge(
+            submission.id, submission.subreddit.id))
+        submission_edges.append(create_edge(
+            submission.author.fullname[3:], submission.id))
+
+        subreddits_list.append(create_subreddit_node(submission.subreddit))
+
         dataframes = {
             "subreddits": pd.DataFrame(subreddits_list),
             "submissions": pd.DataFrame(submissions_list),
             "redditors": pd.DataFrame(redditors_list),
-            "comments": pd.DataFrame(comments_list)
+            "comments": pd.DataFrame(comments_list),
+            "submission_edges": pd.DataFrame(submission_edges),
+            "comment_edges": pd.DataFrame(comment_edges)
         }
         return dataframes
 
@@ -262,6 +318,8 @@ class Reddit:
         submissions_list = []
         redditors_list = []
         comments_list = []
+        submission_edges = []
+        comment_edges = []
 
         redditor = self.reddit.redditor(username)
 
@@ -279,13 +337,40 @@ class Reddit:
                 limit=limit, time_filter=time_filter)
 
         for comment in comments:
-            comments_list.append(create_comment_edge(comment))
 
+            comments_list.append(create_comment_node(comment))
+            comment_edges.append(create_edge(
+                redditor.fullname[3:], comment.id))
+            comment_edges.append(create_edge(
+                comment.id, comment.parent_id[3:]))
+
+            submission = self.reddit.submission(id=comment.link_id[3:])
+            submissions_list.append(create_submission_node(submission))
+            submission_edges.append(create_edge(
+                submission.id, submission.subreddit.id))
+            submission_edges.append(create_edge(
+                submission.author.fullname[3:], submission.id))
+
+            subreddits_list.append(create_subreddit_node(comment.subreddit))
+
+        redditors_list.append(redditor)
         dataframes = {
             "subreddits": pd.DataFrame(subreddits_list),
             "submissions": pd.DataFrame(submissions_list),
             "redditors": pd.DataFrame(redditors_list),
-            "comments": pd.DataFrame(comments_list)
+            "comments": pd.DataFrame(comments_list),
+            "submission_edges": pd.DataFrame(submission_edges),
+            "comment_edges": pd.DataFrame(comment_edges)
+            # "nodes": {
+            #     "subreddits": pd.DataFrame(subreddits_list),
+            #     "submissions": pd.DataFrame(submissions_list),
+            #     "redditors": pd.DataFrame(redditors_list),
+            #     "comments": pd.DataFrame(comments_list)
+            # },
+            # "edges": {
+            #     "submission_edges": pd.DataFrame(submission_edges),
+            #     "comment_edges": pd.DataFrame(comment_edges)
+            # }
         }
         return dataframes
 
@@ -301,6 +386,8 @@ class Reddit:
         submissions_list = []
         redditors_list = []
         comments_list = []
+        submission_edges = []
+        comment_edges = []
 
         redditor = self.reddit.redditor(username)
 
@@ -318,13 +405,26 @@ class Reddit:
                 limit=limit, time_filter=time_filter)
 
         for submission in submissions:
+            subreddits_list.append(create_subreddit_node(submission.subreddit))
+            redditors_list.append(create_redditor_node(submission.author))
+
             submissions_list.append(create_submission_node(submission))
+            submission_edges.append(create_edge(
+                submission.id, submission.subreddit.id))
+            submission_edges.append(create_edge(
+                submission.author.fullname[3:], submission.id))
 
         dataframes = {
-            "subreddits": pd.DataFrame(subreddits_list),
-            "submissions": pd.DataFrame(submissions_list),
-            "redditors": pd.DataFrame(redditors_list),
-            "comments": pd.DataFrame(comments_list)
+            "nodes": {
+                "subreddits": pd.DataFrame(subreddits_list),
+                "submissions": pd.DataFrame(submissions_list),
+                "redditors": pd.DataFrame(redditors_list),
+                "comments": pd.DataFrame(comments_list)
+            },
+            "edges": {
+                "submission_edges": pd.DataFrame(submission_edges),
+                "comment_edges": pd.DataFrame(comment_edges)
+            }
         }
         return dataframes
 
