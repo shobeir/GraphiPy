@@ -1,7 +1,13 @@
+import pandas as pd
+
 class Graph:
     def __init__(self):
         self.nodes = {}
         self.edges = {}
+
+    def __init__(self, nodes_dict,  edges_dict):
+        self.nodes = nodes_dict;
+        self.edges = edges_dict;
 
     def create_node(self, node):
         self.nodes[node.get_id()] = node
@@ -15,20 +21,38 @@ class Graph:
     def get_edges(self):
         return self.edges
 
+    def get_dataFrame(self, options):
+        if options['dataFrame_type'] is "pandas":
+            node_edge_list = []
+            for id in self.nodes:
+                attributes = vars(self.nodes[id])
+                node_edge_list.append(attributes)
+            for id in self.edges:
+                attributes = vars(self.edges[id])
+                node_edge_list.append(attributes)
+            node_edge_df = pd.DataFrame(node_edge_list)
+            return node_edge_df
+
+    def __add__(self, another_graph):
+        nodes_copy = self.nodes.copy();
+        edges_copy = self.edges.copy();
+        nodes_copy.update(another_graph.get_nodes())
+        edges_copy.update(another_graph.get_edges())
+        return Graph(nodes_copy, edges_copy)
 
 class Node:
-    def __init__(self, _id):
-        self._id = _id
-
+    def __init__(self, _id, _label):
+        self.Id = _id
+        self.Label = _label
+    
     def get_id(self):
-        return self._id
-
+        return self.Id
 
 class Edge:
-    def __init__(self, _id, _source, _target):
-        self._id = _id
-        self.source = _source
-        self.target = _target
+    def __init__(self, _source, _target):
+        self.Source = _source
+        self.Target = _target
 
     def get_id(self):
-        return self._id
+        return self.Source + self.Target
+
