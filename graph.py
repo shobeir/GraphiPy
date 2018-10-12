@@ -1,13 +1,10 @@
 import pandas as pd
 
-class Graph:
-    def __init__(self):
-        self.nodes = {}
-        self.edges = {}
 
-    def __init__(self, nodes_dict,  edges_dict):
-        self.nodes = nodes_dict;
-        self.edges = edges_dict;
+class Graph:
+    def __init__(self, nodes_dict={},  edges_dict={}):
+        self.nodes = nodes_dict
+        self.edges = edges_dict
 
     def create_node(self, node):
         self.nodes[node.get_id()] = node
@@ -21,32 +18,40 @@ class Graph:
     def get_edges(self):
         return self.edges
 
-    def get_dataFrame(self, options):
-        if options['dataFrame_type'] is "pandas":
-            node_edge_list = []
+    def get_dataFrame(self, dataFrame_type="pandas"):
+        if dataFrame_type is "pandas":
+            node_list = []
+            edge_list = []
             for id in self.nodes:
                 attributes = vars(self.nodes[id])
-                node_edge_list.append(attributes)
+                node_list.append(attributes)
             for id in self.edges:
                 attributes = vars(self.edges[id])
-                node_edge_list.append(attributes)
-            node_edge_df = pd.DataFrame(node_edge_list)
-            return node_edge_df
+                edge_list.append(attributes)
+
+            node_df = pd.DataFrame(node_list)
+            edge_df = pd.DataFrame(edge_list)
+            return {
+                "node": node_df,
+                "edge": edge_df
+            }
 
     def __add__(self, another_graph):
-        nodes_copy = self.nodes.copy();
-        edges_copy = self.edges.copy();
+        nodes_copy = self.nodes.copy()
+        edges_copy = self.edges.copy()
         nodes_copy.update(another_graph.get_nodes())
         edges_copy.update(another_graph.get_edges())
         return Graph(nodes_copy, edges_copy)
+
 
 class Node:
     def __init__(self, _id, _label):
         self.Id = _id
         self.Label = _label
-    
+
     def get_id(self):
         return self.Id
+
 
 class Edge:
     def __init__(self, _source, _target):
@@ -55,4 +60,3 @@ class Edge:
 
     def get_id(self):
         return self.Source + self.Target
-
