@@ -17,6 +17,32 @@ class Graph:
             self.nodes = nodes_dict
             self.edges = edges_dict
 
+    def export_all_CSV(self, prefix):
+        if self.option == "pandas":
+            nodes = self.get_nodes()
+            for key in nodes.keys():
+                nodes[key].to_csv(prefix + "_" + key +
+                                  "_node.csv", encoding="utf-8", index=False)
+            edges = self.get_edges()
+            for key in edges.keys():
+                edges[key].to_csv(prefix + "_" + key +
+                                  "_edge.csv", encoding="utf-8", index=False)
+
+    def export_CSV(self, prefix, node_option=set(), edge_option=set()):
+        if self.option == "pandas":
+            if len(node_option) > 0:
+                nodes = self.get_nodes()
+                for key in nodes.keys():
+                    if key in node_option:
+                        nodes[key].to_csv(
+                            prefix + "_" + key + "_node.csv", encoding="utf-8", index=False)
+            if len(edge_option) > 0:
+                edges = self.get_edges()
+                for key in edges.keys():
+                    if key in edge_option:
+                        edges[key].to_csv(prefix + "_" + key +
+                                          "edge.csv", encoding="utf-8", index=False)
+
     def create_node(self, node):
         label = node.get_label_attribute()
         _id = node.get_id()
