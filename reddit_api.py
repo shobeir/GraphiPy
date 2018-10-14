@@ -11,12 +11,6 @@ class Reddit:
             user_agent=api["user_agent"]
         )
 
-    def test(self):
-        # node = Subreddit('100', 'subreddit', 'pics')
-        # self.graph.create_node(node)
-
-        return 0
-
     def fetch_subreddits_by_name(
         self,
         keyword,
@@ -30,7 +24,7 @@ class Reddit:
         graph = Graph()
         for subreddit in subreddits:
             graph.create_node(Subreddit(subreddit))
-        return graph.get_dataFrame()
+        return graph
 
        
     def fetch_subreddits_by_topic(
@@ -44,7 +38,7 @@ class Reddit:
         graph = Graph()
         for subreddit in subreddits:
             graph.create_node(Subreddit(subreddit))
-        return graph.get_dataFrame()
+        return graph
 
 
     def fetch_subreddit_submissions(
@@ -84,7 +78,7 @@ class Reddit:
                 Edge(submission.author.fullname[3:], submission.id))
             graph.create_edge(
                 Edge(submission.id, submission.subreddit.id))
-        return graph.get_dataFrame()
+        return graph
 
        
     def fetch_submission_comments(
@@ -136,7 +130,7 @@ class Reddit:
         # Subreddit Node
         graph.create_node(Subreddit(submission.subreddit))
 
-        return graph.get_dataFrame()
+        return graph
 
         
     def fetch_redditor_comments(
@@ -192,7 +186,7 @@ class Reddit:
 
         graph.create_node(Redditor(redditor))
 
-        return graph.get_dataFrame()
+        return graph
 
         
     def fetch_redditor_submissions(
@@ -234,7 +228,7 @@ class Reddit:
         # Redditor Node
         graph.create_node(Redditor(redditor))
 
-        return graph.get_dataFrame()
+        return graph
 
 
 class Redditor (Node):
