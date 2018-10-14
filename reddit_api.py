@@ -3,13 +3,15 @@ import pandas as pd
 import pprint
 from graph import Graph, Node, Edge
 
+
 class Reddit:
-    def __init__(self, api):
+    def __init__(self, api, option="pandas"):
         self.reddit = praw.Reddit(
             client_id=api["client_id"],
             client_secret=api["client_secret"],
             user_agent=api["user_agent"]
         )
+        self.option = option
 
     def fetch_subreddits_by_name(
         self,
@@ -21,12 +23,13 @@ class Reddit:
         subreddits = self.reddit.subreddits.search_by_name(
             "t", include_nsfw=nsfw, exact=exact)
 
-        graph = Graph()
+        graph = Graph(option=self.option)
         for subreddit in subreddits:
             graph.create_node(Subreddit(subreddit))
+
+        graph.generate_df("node")
         return graph
 
-       
     def fetch_subreddits_by_topic(
         self,
         keyword,
@@ -35,11 +38,12 @@ class Reddit:
         subreddits = self.reddit.subreddits.search(
             keyword, limit=limit)
 
-        graph = Graph()
+        graph = Graph(option=self.option)
         for subreddit in subreddits:
             graph.create_node(Subreddit(subreddit))
-        return graph
 
+        graph.generate_df("node")
+        return graph
 
     def fetch_subreddit_submissions(
         self,
@@ -49,38 +53,43 @@ class Reddit:
         sort="top",
         time_filter="month"
     ):
+        subreddit = self.reddit.subreddit(subreddit_name)
         if keyword == "":
-            submissions = self.reddit.subreddit(subreddit_name)
 
             if sort == "hot":
-                submissions = submissions.hot(
+                submissions = subreddit.hot(
                     limit=limit, time_filter=time_filter)
             elif sort == "new":
-                submissions = submissions.new(
+                submissions = subreddit.new(
                     limit=limit, time_filter=time_filter)
             elif sort == "controversial":
-                submissions = submissions.controversial(
+                submissions = subreddit.controversial(
                     limit=limit, time_filter=time_filter)
             elif sort == "rising":
-                submissions = submissions.rising(
+                submissions = subreddit.rising(
                     limit=limit, time_filter=time_filter)
             else:
-                submissions = submissions.top(
+                submissions = subreddit.top(
                     limit=limit, time_filter=time_filter)
         else:
-            submissions = self.reddit.subreddit(subreddit_name).search(
+            submissions = subreddit.search(
                 keyword, sort=sort, time_filter=time_filter, limit=limit)
 
-        graph = Graph()
+        graph = Graph(option=self.option)
         for submission in submissions:
+            graph.create_node(Redditor(submission.author))
+
             graph.create_node(Submission(submission))
             graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id))
+                Edge(submission.author.fullname[3:], submission.id, "submission"))
             graph.create_edge(
-                Edge(submission.id, submission.subreddit.id))
+                Edge(submission.id, submission.subreddit.id, "submission"))
+        graph.create_node(Subreddit(subreddit))
+
+        graph.generate_df("node")
+        graph.generate_df("edge")
         return graph
 
-       
     def fetch_submission_comments(
         self,
         submission_id,
@@ -97,17 +106,20 @@ class Reddit:
         if limit is None or limit > 32:
             submission.comments.replace_more(limit=None)
         else:
-            submission.comments.replace_more(limit=limit)
+            submission.comments.replace_more(limit=limit//10)
 
         i = 0
+        j = 0
         if top_level is True:
             comments = submission.comments
         else:
             comments = submission.comments.list()
 
-        graph = Graph()
+        graph = Graph(option=self.option)
         for comment in comments:
             if comment.author is None:
+                if j > limit + 100:
+                    break
                 continue
             # Redditor Node
             graph.create_node(Redditor(comment.author))
@@ -115,8 +127,9 @@ class Reddit:
             # Comment Node Edge
             graph.create_node(Comment(comment))
             graph.create_edge(
-                Edge(comment.author.fullname[3:], comment.id))
-            graph.create_edge(Edge(comment.id, comment.parent_id[3:]))
+                Edge(comment.author.fullname[3:], comment.id, "comment"))
+            graph.create_edge(
+                Edge(comment.id, comment.parent_id[3:], "comment"))
             i += 1
             if i == limit:
                 break
@@ -124,15 +137,17 @@ class Reddit:
         # Submission Node Edge
         graph.create_node(Submission(submission))
         graph.create_edge(
-            Edge(submission.author.fullname[3:], submission.id))
-        graph.create_edge(Edge(submission.id, submission.subreddit.id))
+            Edge(submission.author.fullname[3:], submission.id, "submission"))
+        graph.create_edge(
+            Edge(submission.id, submission.subreddit.id, "submission"))
 
         # Subreddit Node
         graph.create_node(Subreddit(submission.subreddit))
 
+        graph.generate_df("node")
+        graph.generate_df("edge")
         return graph
 
-        
     def fetch_redditor_comments(
         self,
         username,
@@ -155,7 +170,7 @@ class Reddit:
             comments = redditor.comments.new(
                 limit=limit, time_filter=time_filter)
 
-        graph = Graph()
+        graph = Graph(option=self.option)
         i = 0
         for comment in comments:
             if comment.author is None:
@@ -168,8 +183,9 @@ class Reddit:
             submission = self.reddit.submission(id=comment.link_id[3:])
             graph.create_node(Submission(submission))
             graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id))
-            graph.create_edge(Edge(submission.id, submission.subreddit.id))
+                Edge(submission.author.fullname[3:], submission.id, "submission"))
+            graph.create_edge(
+                Edge(submission.id, submission.subreddit.id, "submission"))
 
             # Subreddit Node
             graph.create_node(Subreddit(submission.subreddit))
@@ -177,8 +193,10 @@ class Reddit:
             # Comment Node Edge
             graph.create_node(Comment(comment))
             graph.create_edge(
-                Edge(comment.author.fullname[3:], comment.id))
-            graph.create_edge(Edge(comment.id, comment.parent_id[3:]))
+                Edge(comment.author.fullname[3:], comment.id,
+                     "comment"))
+            graph.create_edge(
+                Edge(comment.id, comment.parent_id[3:], "comment"))
 
             i += 1
             if i == limit:
@@ -186,9 +204,10 @@ class Reddit:
 
         graph.create_node(Redditor(redditor))
 
+        graph.generate_df("node")
+        graph.generate_df("edge")
         return graph
 
-        
     def fetch_redditor_submissions(
         self,
         username,
@@ -212,7 +231,7 @@ class Reddit:
             submissions = redditor.submissions.new(
                 limit=limit, time_filter=time_filter)
 
-        graph = Graph()
+        graph = Graph(option=self.option)
         for submission in submissions:
 
             # Subreddit Node
@@ -221,13 +240,15 @@ class Reddit:
             # Submission Node Edge
             graph.create_node(Submission(submission))
             graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id))
+                Edge(submission.author.fullname[3:], submission.id, "submission"))
             graph.create_edge(
-                Edge(submission.id, submission.subreddit.id))
+                Edge(submission.id, submission.subreddit.id, "submission"))
 
         # Redditor Node
         graph.create_node(Redditor(redditor))
 
+        graph.generate_df("node")
+        graph.generate_df("edge")
         return graph
 
 
@@ -236,8 +257,8 @@ class Redditor (Node):
         self,
         redditor
     ):
-        Node.__init__(self, redditor.fullname[3:], "u/" + redditor.name)
-        self.label_attribute = "redditor"
+        Node.__init__(
+            self, redditor.fullname[3:], "u/" + redditor.name, "redditor")
         self.username = redditor.name
         self.created = redditor.created
         self.link_karma = redditor.link_karma
@@ -269,10 +290,10 @@ class Submission (Node):
         except AttributeError:
             pass
 
-        Node.__init__(self, submission.id, "submission_" + submission.id)
+        Node.__init__(self, submission.id, "submission_" +
+                      submission.id, "submission")
         self.author_id = submission.author_fullname[3:]
         self.subreddit_id = submission.subreddit_id[3:]
-        self.label_attribute = "submission"
         self.created = submission.created
         self.title = submission.title
         self.url = submission.url
@@ -292,8 +313,8 @@ class Subreddit (Node):
         self,
         subreddit
     ):
-        Node.__init__(self, subreddit.id, subreddit.display_name_prefixed)
-        self.label_attribute = "subreddit"
+        Node.__init__(self, subreddit.id,
+                      subreddit.display_name_prefixed, "subreddit")
         self.display_name = subreddit.display_name
         self.created = subreddit.created
         self.description = subreddit.description
@@ -304,21 +325,13 @@ class Subreddit (Node):
         self.title = subreddit.title
         self.url = "https://reddit.com"+subreddit.url
 
-    def to_dict(self):
-        return {
-            'id': self._id,
-            'label': self.label,
-            'label_attribute': self.label_attribute
-        }
-
 
 class Comment (Node):
     def __init__(
         self,
         comment
     ):
-        Node.__init__(self, comment.id, "comment_" + comment.id)
-        self.label_attribute = "comment"
+        Node.__init__(self, comment.id, "comment_" + comment.id, "comment")
         self.parent_id = comment.parent_id[3:]
         self.author_id = comment.author_fullname[3:]
         self.submisison_id = comment.link_id[3:]
