@@ -11,15 +11,18 @@ class USDE:
         return self.tumblr
 
     def exportCSV(self, dataframes, prefix):
+
         for key in dataframes.keys():
             dataframes[key].to_csv(
                 prefix + "_" + key + ".csv", encoding="utf-8", index=False)
 
     def merge(self, main_df, target_df):
+
         for key in main_df.keys():
             main_df[key] = main_df[key].append(target_df[key])
 
     def remove_duplicates(self, df):
+
         for key in df.keys():
             if df[key].empty:
                 continue
@@ -29,6 +32,7 @@ class USDE:
                 df[key].drop_duplicates(inplace=True)
 
     def get_df_from_list(self, df_list):
+
         temp_df = {}
         for key in df_list:
             temp_df[key] = None
@@ -52,9 +56,20 @@ def main():
     usde = USDE(api)
     tumblr = usde.get_tumblr()
 
+    df = tumblr.fetch_followed_blogs_by_blog_name("lilized")
+    usde.exportCSV(df, "test_tumblr_followed_blogs")
 
-    tumblr.fetch_tumblr_blog(blog_name="azspot")
-  #  df_tag = tumblr.fetch_tumblr_posts_tagged(tag="overwatch")
+    df = tumblr.fetch_published_posts_by_blog_name("overwatchbot")
+    usde.exportCSV(df, "test_tumblr_published_posts")
+
+    df = tumblr.fetch_liked_posts_by_blog_name("lilized") # might throw error
+    usde.exportCSV(df, "test_tumblr_liked_posts")
+
+    df = tumblr.fetch_posts_tagged_by_tag(tag="overwatch")
+    usde.exportCSV(df, "test_tumblr_posts_tagged")
+
 
 if __name__ == '__main__':
     main()
+
+
