@@ -14,8 +14,8 @@ class Graph:
             self.nodes_df = {}
             self.edges_df = {}
         else:
-            self.nodes = nodes_dict
-            self.edges = edges_dict
+            self.nodes = {}
+            self.edges = {}
 
     def export_all_CSV(self, prefix):
         if self.option == "pandas":
