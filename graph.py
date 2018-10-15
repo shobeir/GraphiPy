@@ -2,15 +2,15 @@ import pandas as pd
 
 
 class Graph:
-    def __init__(self, nodes=None, edges=None, option="pandas"):
+    def __init__(self, option="pandas"):
         self.option = option
-        self.node_count = len(nodes)
-        self.edge_count = len(edges)
+        self.node_count = 0
+        self.edge_count = 0
         if option == "neo4j":
             pass
         else:
-            self.nodes = nodes
-            self.edges = edges
+            self.nodes = {}
+            self.edges = {}
             if option == "pandas":
                 self.nodes_df = {}
                 self.edges_df = {}
@@ -95,7 +95,7 @@ class Graph:
             self.edges[label][_id] = edge
 
         self.edge_count += 1
-        if (self.edge_count == 2000):
+        if self.edge_count == 2000:
             self.generate_df("edge")
 
     def get_nodes(self):
