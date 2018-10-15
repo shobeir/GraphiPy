@@ -21,7 +21,7 @@ class Reddit:
         exact=False
     ):
         subreddits = self.reddit.subreddits.search_by_name(
-            "t", include_nsfw=nsfw, exact=exact)
+            keyword, include_nsfw=nsfw, exact=exact)
 
         graph = Graph(option=self.option)
         for subreddit in subreddits:
