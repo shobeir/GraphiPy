@@ -136,12 +136,12 @@ class Graph:
 
 class Node:
     def __init__(self, _id, label, label_attribute):
-        self._id = _id
+        self.id = _id
         self.label = label
         self.label_attribute = label_attribute
 
     def get_id(self):
-        return self._id
+        return self.id
 
     def get_label_attribute(self):
         return self.label_attribute
