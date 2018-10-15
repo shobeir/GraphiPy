@@ -2,15 +2,15 @@ import pandas as pd
 
 
 class Graph:
-    def __init__(self, nodes_dict={},  edges_dict={}, option="pandas"):
+    def __init__(self, option="pandas"):
         self.option = option
         self.node_count = 0
         self.edge_count = 0
         if option == "neo4j":
             pass
         elif option == "pandas":
-            self.nodes = nodes_dict
-            self.edges = edges_dict
+            self.nodes = {}
+            self.edges = {}
             self.nodes_df = {}
             self.edges_df = {}
         else:
