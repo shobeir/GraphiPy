@@ -95,7 +95,7 @@ class Graph:
             self.edges[label][_id] = edge
 
         self.edge_count += 1
-        if (self.edge_count == 2000):
+        if self.edge_count == 2000:
             self.generate_df("edge")
 
     def get_nodes(self):

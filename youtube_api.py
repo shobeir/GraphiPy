@@ -1,11 +1,7 @@
 #!/usr/bin/python
-import json
-from Queue import Queue
-
 import httplib2
 import os
 import sys
-import pandas as pd
 
 from apiclient.discovery import build_from_document
 from oauth2client.client import flow_from_clientsecrets
@@ -13,7 +9,8 @@ from oauth2client.file import Storage
 from oauth2client.tools import run_flow
 
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+
+from graph import Node, Edge, Graph
 
 
 def get_comments(youtube, video_id, channel_id):
@@ -26,126 +23,68 @@ def get_comments(youtube, video_id, channel_id):
     return results["items"]
 
 
-# Remove keyword arguments that are not set
-def remove_empty_kwargs(**kwargs):
-    good_kwargs = {}
-    if kwargs is not None:
-        for key, value in kwargs.iteritems():
-            if value:
-                good_kwargs[key] = value
-    return good_kwargs
-
-
-def build_resource(properties):
-    resource = {}
-    for p in properties:
-        # Given a key like "snippet.title", split into "snippet" and "title", where
-        # "snippet" will be an object and "title" will be a property in that object.
-        prop_array = p.split('.')
-        ref = resource
-        for pa in range(0, len(prop_array)):
-            is_array = False
-            key = prop_array[pa]
-
-            # For properties that have array values, convert a name like
-            # "snippet.tags[]" to snippet.tags, and set a flag to handle
-            # the value as an array.
-            if key[-2:] == '[]':
-                key = key[0:len(key) - 2:]
-                is_array = True
-
-            if pa == (len(prop_array) - 1):
-                # Leave properties without values out of inserted resource.
-                if properties[p]:
-                    if is_array:
-                        ref[key] = properties[p].split(',')
-                    else:
-                        ref[key] = properties[p]
-            elif key not in ref:
-                # For example, the property is "snippet.title", but the resource does
-                # not yet have a "snippet" object. Create the snippet object here.
-                # Setting "ref = ref[key]" means that in the next time through the
-                # "for pa in range ..." loop, we will be setting a property in the
-                # resource's "snippet" object.
-                ref[key] = {}
-                ref = ref[key]
-            else:
-                # For example, the property is "snippet.description", and the resource
-                # already has a "snippet" object.
-                ref = ref[key]
-    return resource
-
-
-def print_response(response):
-    print(response)
-
-
-class Channel:
+class ChannelNode(Node):
     def __init__(self, channel):
-        self.channel_id = channel['id']['channelId']
-        self.channel_title = channel['snippet']['title']
+        if 'channelId' not in channel['id']:
+            channel_id = channel['id']
+        else:
+            channel_id = channel['id']['channelId']
+
+        # initialize the channel node with node id & Label
+        Node.__init__(self, channel_id, channel['snippet']['title'], "channel")
+
         self.description = channel['snippet']['description']
+        self.published_at = channel['snippet']['publishedAt']
+        self.view_count = channel['statistics']['viewCount']
+        self.comment_count = channel['statistics']['commentCount']
+        self.hidden_subscriber_count = channel['statistics']['hiddenSubscriberCount']
+        self.video_count = channel['statistics']['videoCount']
+
+        if not channel['statistics']['hiddenSubscriberCount']:
+            self.subscriber_count = channel['statistics']['subscriberCount']
+        if 'customUrl' in channel:
+            self.custom_url = channel['snippet']['customUrl']
 
 
-class Video:
+class VideoNode(Node):
     def __init__(self, video):
+        if 'videoId' not in video['id']:
+            video_id = video['id']
+        else:
+            video_id = video['id']['videoId']
+        # initialize the video node with video id & label
+        Node.__init__(self, video_id, video['snippet']['title'], "video")
         self.published_at = video['snippet']['publishedAt']
-        self.video_id = video['id']['videoId']
-        self.title = video['snippet']['title']
         self.description = video['snippet']['description']
 
-        # relational
-        self.channel_id = video['snippet']['channelId']
-        self.channel_title = video['snippet']['channelTitle']
 
-
-class Playlist:
+class PlaylistNode(Node):
     def __init__(self, playlist):
-        self.published_at = playlist['snippet']['publishedAt']
         if 'playlistId' not in playlist['id']:
-            self.playlist_id = playlist['id']
+            playlist_id = playlist['id']
         else:
-            self.playlist_id = playlist['id']['playlistId']
-        self.title = playlist['snippet']['title']
+            playlist_id = playlist['id']['playlistId']
+        Node.__init__(self, playlist_id, playlist['snippet']['title'], "playlist")
+
+        self.published_at = playlist['snippet']['publishedAt']
         self.description = playlist['snippet']['description']
 
-        # relational
-        self.channel_id = playlist['snippet']['channelId']
-        self.channel_title = playlist['snippet']['channelTitle']
 
-
-class Comment:
+class CommentNode(Node):
     def __init__(self, comment):
+        Node.__init__(self, comment['id'], comment['snippet']['textDisplay'], "comment")
+
         # Attributes:
         self.updated_at = comment['snippet']['updatedAt']
         self.published_at = comment['snippet']['publishedAt']
         self.view_rating = comment['snippet']['viewerRating']
         self.can_rate = comment['snippet']['canRate']
         self.text_original = comment['snippet']['textOriginal']
-        self.text_display = comment['snippet']['textDisplay']
         self.like_count = comment['snippet']['likeCount']
-
-        # Relational Attributes:
-        self.video_id = None
-        self.author_channel_id = comment['snippet']['authorChannelId']['value']
-        self.author_channel_url = comment['snippet']['authorChannelUrl']
-        self.author_display_name = comment['snippet']['authorDisplayName']
-
-
-def parse_comment_to_node(comment):
-    return {'updated_at': comment['snippet']['updatedAt'],
-            'published_at': comment['snippet']['publishedAt'],
-            'view_rating': comment['snippet']['viewerRating'],
-            'can_rate': comment['snippet']['canRate'],
-            'text_original': comment['snippet']['textOriginal'],
-            # text_display is the label
-            'Label': comment['snippet']['textDisplay'],
-            'like_count': comment['snippet']['likeCount'],
-            'Id': comment['id']}
 
 
 class Youtube:
-    def __init__(self, api):
+    def __init__(self, api, option="pandas"):
         self.YOUTUBE_READ_WRITE_SSL_SCOPE = "https://www.googleapis.com/auth/youtube.force-ssl"
         self.YOUTUBE_API_SERVICE_NAME = 'youtube'
         self.YOUTUBE_API_VERSION = 'v3'
@@ -166,10 +105,8 @@ class Youtube:
         https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
         """ % os.path.abspath(os.path.join(os.path.dirname(__file__), self.CLIENT_SECRET_FILE))
 
-        self.videos = []
-        self.channels = []
-        self.playlists = []
-        self.video_comments = []
+        self.option = option
+
         self.youtube = build(self.YOUTUBE_API_SERVICE_NAME, self.YOUTUBE_API_VERSION,
                              developerKey=self.DEVELOPER_KEY)
         self.get_authenticated_service()
@@ -197,246 +134,123 @@ class Youtube:
             part='snippet,contentDetails,statistics'
         ).execute()
 
-        channel = response['items'][0]
-        channel_node = {"Id": channel_id,
-                        "Label": channel['snippet']['title'],
-                        "description": channel['snippet']['description'],
-                        "published_at": channel['snippet']['publishedAt'],
-                        "view_count": channel['statistics']['viewCount'],
-                        "comment_count": channel['statistics']['commentCount'],
-                        "hidden_subscriber_count": channel['statistics']['hiddenSubscriberCount'],
-                        "video_count": channel['statistics']['videoCount']}
-
-        if not channel['statistics']['hiddenSubscriberCount']:
-            channel_node["subscriber_count"] = channel['statistics']['subscriberCount']
-        if 'customUrl' in channel:
-            channel_node["custom_url"] = channel['snippet']['customUrl']
+        channel_node = ChannelNode(response['items'][0])
         return channel_node
 
-    def fetch_video(self, options):
+    def fetch_channel_by_id(self, channel_id):
+        graph = Graph(option=self.option)
+        graph.create_node(self.create_node_by_channel_id(channel_id))
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
+
+    def fetch_videos_by_topic(self, topic, maxResult=25):
         search_response = self.youtube.search().list(
-            q=options.q,
+            q=topic,
+            type='video',
             part='id,snippet',
-            maxResults=options.max_results
+            maxResults=maxResult
         ).execute()
 
-        video_nodes = []
-        video_edges = []
-        channel_nodes = []
-        # video_comments_nodes = []
-        # comment_user_edges = []
-        # comment_reply_edges = []
-        # comment_video_edges = []
+        graph = Graph(option=self.option)
 
         for search_result in search_response.get('items', []):
             if search_result['id']['kind'] == 'youtube#video':
+                channel_id = search_result['snippet']['channelId']
                 video_id = search_result['id']['videoId']
-                video_node = {'published_at': search_result['snippet']['publishedAt'],
-                              # video_id is Id, title is Label
-                              'Id': search_result['id']['videoId'],
-                              'Label': search_result['snippet']['title'],
-                              'description': search_result['snippet']['description']}
-                video_nodes.append(video_node)
+                graph.create_node(VideoNode(search_result))
+                graph.create_node(self.create_node_by_channel_id(channel_id))
+                graph.create_edge(Edge(channel_id, video_id, "createVideo"))
 
-                video_edges.append({'Source': search_result['snippet']['channelId'],
-                                    'Target': video_id})
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
 
-                # channel id is Id, title is Label
-                channel_node = self.create_node_by_channel_id(search_result['snippet']['channelId'])
-                channel_nodes.append(channel_node)
+    # Fetches video with its comments
+    def fetch_video_by_id_with_comments(self, video_id):
+        graph = Graph(option=self.option)
+        response = self.youtube.videos().list(
+            part='snippet,contentDetails,statistics',
+            id=video_id
+        ).execute()
 
-                # try:
-                #     video_comments_dic = self.fetch_video_comments(video_id)
-                #     video_comments_nodes += video_comments_dic['comment_nodes']
-                #     comment_user_edges += video_comments_dic['comment_user_edges']
-                #     comment_reply_edges += video_comments_dic['comment_reply_edges']
-                #     channel_nodes += video_comments_dic['channel_nodes']
-                #     comment_video_edges += video_comments_dic['comment_video_edges']
-                # except HttpError as e:
-                #     print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+        # Add video node to the graph
+        graph.create_node(VideoNode(response['items'][0]))
 
-        video_nodes_df = pd.DataFrame(video_nodes)
-        video_edges_df = pd.DataFrame(video_edges)
-        channel_nodes_df = pd.DataFrame(channel_nodes)
-        # video_comments_nodes_df = pd.DataFrame(video_comments_nodes)
-        # comment_reply_edges_df = pd.DataFrame(comment_reply_edges)
-        # comment_user_edges_df = pd.DataFrame(comment_user_edges)
-        # comment_video_edges_df = pd.DataFrame(comment_video_edges)
+        # Add its author
+        channel_id = response['items'][0]['snippet']['channelId']
+        graph.create_node(self.create_node_by_channel_id(channel_id))
+        graph.create_edge(Edge(channel_id, video_id, "createVideo"))
 
-        video_nodes_df.to_csv("1.csv", encoding='UTF-8', index=False)
-        video_edges_df.to_csv("2.csv", encoding='UTF-8', index=False)
-        channel_nodes_df.to_csv("3.csv", encoding='UTF-8', index=False)
-        # video_comments_nodes_df.to_csv("4.csv", encoding='UTF-8', index=False)
-        # comment_reply_edges_df.to_csv("5.csv", encoding='UTF-8', index=False)
-        # comment_user_edges_df.to_csv("6.csv", encoding='UTF-8', index=False)
-        # comment_video_edges_df.to_csv("7.csv", encoding='UTF-8', index=False)
-
-        print video_nodes_df
-        print video_edges_df
-        print channel_nodes_df
-        # print video_comments_nodes_df
-        # print comment_reply_edges_df
-        # print comment_user_edges_df
-        # print comment_video_edges_df
-
-        return {"video_nodes_df": video_nodes_df,
-                "video_edges_df": video_edges_df,
-                "channel_nodes_df": channel_nodes_df}
-                # "video_comments_nodes_df": video_comments_nodes_df,
-                # "comment_reply_edges_df": comment_reply_edges_df,
-                # "comment_user_edges_df": comment_user_edges_df,
-                # "comment_video_edges_df": comment_video_edges_df}
-
-    def fetch_video_comments(self, video_id):
-        comment_nodes = []
-        comment_user_edges = []
-        comment_reply_edges = []
-        comment_video_edges = []
-        channel_nodes = []
+        # fetch its comments
         comment_threads = get_comments(self.youtube, video_id, None)
+
         for comment_thread in comment_threads:
             top_level_comment = comment_thread['snippet']['topLevelComment']
-            # Source is channel Id, target is comment Id
-            comment_user_edge = {'Target': top_level_comment['id'],
-                                 'Source': top_level_comment['snippet']['authorChannelId']['value']}
-            comment_user_edges.append(comment_user_edge)
-            channel_nodes.append(self.create_node_by_channel_id(top_level_comment['snippet']['authorChannelId']['value']))
+            top_level_comment_id = top_level_comment['id']
+            top_level_channel_id = top_level_comment['snippet']['authorChannelId']['value']
 
-            top_level_comment_node = parse_comment_to_node(top_level_comment)
-            comment_nodes.append(top_level_comment_node)
-
-            comment_video_edges.append({'Target': video_id,
-                                        'Source': top_level_comment['id']})
+            graph.create_node(self.create_node_by_channel_id(top_level_channel_id))
+            graph.create_node(CommentNode(top_level_comment))
+            graph.create_edge(Edge(top_level_channel_id, top_level_comment_id, "comment"))
+            graph.create_edge(Edge(top_level_comment_id, video_id, "comment"))
 
             if 'replies' in comment_thread:
                 replies = comment_thread['replies']['comments']
                 for reply in replies:
-                    # Add reply (to top level comment) nodes
-                    comment_nodes.append(parse_comment_to_node(reply))
-                    # Add Edge
-                    comment_reply_edge = {'Target': reply['snippet']['parentId'],
-                                          'Source': reply['id']}
-                    reply_user_edge = {'Target': reply['id'],
-                                       'Source': reply['snippet']['authorChannelId']['value'],
-                                       'channel_url': reply['snippet']['authorChannelUrl'],
-                                       'author_display_name': reply['snippet']['authorDisplayName']}
-                    comment_reply_edges.append(comment_reply_edge)
-                    comment_user_edges.append(reply_user_edge)
+                    reply_id = reply['id']
+                    reply_channel_id = reply['snippet']['authorChannelId']['value']
 
-        comment_nodes_df = pd.DataFrame(comment_nodes)
-        channel_nodes_df = pd.DataFrame(channel_nodes)
-        comment_user_edges_df = pd.DataFrame(comment_user_edges)
-        comment_reply_edges_df = pd.DataFrame(comment_reply_edges)
-        comment_video_edges_df = pd.DataFrame(comment_video_edges)
+                    # connect reply to comment
+                    graph.create_node(CommentNode(reply))
+                    graph.create_edge(Edge(reply_id, top_level_comment_id, "comment"))
+                    # connect user to reply
+                    graph.create_node(self.create_node_by_channel_id(reply_channel_id))
+                    graph.create_edge(Edge(reply_channel_id, reply_id, "comment"))
+                    graph.create_edge(Edge(reply_id, video_id, "comment"))
 
-        print comment_nodes_df
-        print channel_nodes_df
-        print comment_user_edges_df
-        print comment_reply_edges_df
-        print comment_video_edges_df
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
 
-        return {'comment_nodes_df': comment_nodes_df,
-                'channel_nodes_df': channel_nodes_df,
-                'comment_user_edges_df': comment_user_edges_df,
-                'comment_reply_edges_df': comment_reply_edges_df,
-                'comment_video_edges_df': comment_video_edges_df}
-
-    def fetch_channel(self, options):
+    def fetch_channels_by_topic(self, topic, maxResult=25):
         search_response = self.youtube.search().list(
-            q=options.q,
+            q=topic,
+            type='channel',
             part='id,snippet',
-            maxResults=options.max_results
+            maxResults=maxResult
         ).execute()
 
-    def youtube_search(self, options):
+        graph = Graph(option=self.option)
 
-        # Call the search.list method to retrieve results matching the specified
-        # query term.
+        for search_result in search_response.get('items', []):
+            if search_result['id']['kind'] == 'youtube#channel':
+                channel_id = search_result['snippet']['channelId']
+                graph.create_node(self.create_node_by_channel_id(channel_id))
+
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
+
+    def fetch_playlists_by_topic(self, topic, maxResult=25):
         search_response = self.youtube.search().list(
-            q=options.q,
+            q=topic,
+            type='playlist',
             part='id,snippet',
-            maxResults=options.max_results
+            maxResults=maxResult
         ).execute()
 
-        # Add each result to the appropriate list, and then display the lists of
-        # matching videos, channels, and playlists.
-        try:
-            for search_result in search_response.get('items', []):
+        graph = Graph(option=self.option)
 
-                if search_result['id']['kind'] == 'youtube#video':
-                    self.videos.append(Video(search_result))
-                    comments = get_comments(self.youtube, search_result['id']['videoId'], None)
-                    for item in comments:
-                        topLevelComment = item["snippet"]["topLevelComment"]
-                        comment = Comment(topLevelComment)
-                        comment.videoId = search_result['id']['videoId']
-                        self.video_comments.append(comment)
+        for search_result in search_response.get('items', []):
+            if search_result['id']['kind'] == 'youtube#playlist':
+                playlist_id = search_result['id']['playlistId']
+                graph.create_node(PlaylistNode(search_result))
 
+                channel_id = search_result['snippet']['channelId']
+                graph.create_node(self.create_node_by_channel_id(channel_id))
+                graph.create_edge(Edge(channel_id, playlist_id, "createPlaylist"))
 
-                elif search_result['id']['kind'] == 'youtube#channel':
-                    self.channels.append(Channel(search_result))
-                    comments = get_comments(self.youtube, None, search_result['id']['channelId'])
-                    for item in comments:
-                        comment = item["snippet"]["topLevelComment"]
-                        self.video_comments.append(Comment(comment))
-
-                elif search_result['id']['kind'] == 'youtube#playlist':
-                    playlistId = search_result['id']['playlistId']
-                    self.playlists.append(Playlist(search_result))
-                    self.playlist_items_list_by_playlist_id(part='snippet,contentDetails',
-                                                            maxResults=25,
-                                                            playlistId=playlistId)
-
-        except HttpError as e:
-            print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
-
-    # Build a resource based on a list of properties given as key-value pairs.
-    # Leave properties with empty values out of the inserted resource.
-
-    def playlist_items_list_by_playlist_id(self, **kwargs):
-        # See full sample for function
-        kwargs = remove_empty_kwargs(**kwargs)
-
-        response = self.youtube.playlistItems().list(
-            **kwargs
-        ).execute()
-
-        for item in response['items']:
-            self.playlists.append(Playlist(item))
-
-    def pretty_print(self):
-        print('Videos:')
-        for video in self.videos:
-            print("\tvideoId: " + (video.video_id).encode("utf-8"))
-            print("\ttitle: " + (video.title).encode("utf-8"))
-            print("\tdescription: " + (video.description).encode("utf-8"))
-            print("\tpublished at: " + (video.published_at).encode("utf-8"))
-            print
-
-        print('Channels:')
-        for channel in self.channels:
-            print("\tchannelId: " + (channel.channel_id).encode("utf-8"))
-            print("\ttitle: " + (channel.channel_title).encode("utf-8"))
-            print("\tdescription: " + (channel.description).encode("utf-8"))
-            print
-
-        print('Playlist:')
-        for playlist in self.playlists:
-            print("\tplaylistId: " + (playlist.playlist_id).encode("utf-8"))
-            print("\ttitle: " + (playlist.title).encode("utf-8"))
-            print("\tdescription: " + (playlist.description).encode("utf-8"))
-            print("\tpublished at: " + (playlist.published_at).encode("utf-8"))
-            print
-
-        print('Comments:\n')
-        for comment in self.video_comments:
-            if comment.video_id is not None:
-                print("\tvideoId: " + (comment.video_id).encode("utf-8"))
-            print("\tupdated_at: " + (comment.updated_at).encode("utf-8"))
-            print("\tpublished_at: " + (comment.published_at).encode("utf-8"))
-            print("\tview rating: " + (comment.view_rating).encode("utf-8"))
-            print("\tcan rate: " + str(comment.can_rate))
-            print("\ttext_original: " + (comment.text_original).encode("utf-8"))
-            print("\ttext_display: " + (comment.text_display).encode("utf-8"))
-            print("\tlike count: " + str(comment.like_count))
-            print
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
