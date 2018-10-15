@@ -8,14 +8,12 @@ class Graph:
         self.edge_count = 0
         if option == "neo4j":
             pass
-        elif option == "pandas":
-            self.nodes = {}
-            self.edges = {}
-            self.nodes_df = {}
-            self.edges_df = {}
         else:
             self.nodes = {}
             self.edges = {}
+            if option == "pandas":
+                self.nodes_df = {}
+                self.edges_df = {}
 
     def export_all_CSV(self, prefix):
         if self.option == "pandas":
