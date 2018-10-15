@@ -56,17 +56,17 @@ def main():
     usde = USDE(api)
     tumblr = usde.get_tumblr()
 
-    df = tumblr.fetch_followed_blogs_by_blog_name("lilized")
-    usde.exportCSV(df, "test_tumblr_followed_blogs")
+    df = tumblr.fetch_followed_blogs("lilized")
+    df.export_all_CSV("tumblr_followed_blogs")
 
-    df = tumblr.fetch_published_posts_by_blog_name("overwatchbot")
-    usde.exportCSV(df, "test_tumblr_published_posts")
+    df = tumblr.fetch_published_posts("overwatchbot")
+    df.export_all_CSV("tumblr_published_posts")
 
-    df = tumblr.fetch_liked_posts_by_blog_name("lilized") # might throw error
-    usde.exportCSV(df, "test_tumblr_liked_posts")
+    df = tumblr.fetch_liked_posts("lilized")
+    df.export_all_CSV("tumblr_liked_posts")
 
-    df = tumblr.fetch_posts_tagged_by_tag(tag="overwatch")
-    usde.exportCSV(df, "test_tumblr_posts_tagged")
+    df = tumblr.fetch_posts_tagged(tag="overwatch")
+    df.export_all_CSV("tumblr_posts_tagged")
 
 
 if __name__ == '__main__':
