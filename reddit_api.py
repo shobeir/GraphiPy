@@ -20,6 +20,12 @@ class Reddit:
         nsfw=True,
         exact=False
     ):
+        '''
+        nodes:
+            - subreddit
+        edges:
+            -
+        '''
         subreddits = self.reddit.subreddits.search_by_name(
             keyword, include_nsfw=nsfw, exact=exact)
 
@@ -35,6 +41,12 @@ class Reddit:
         keyword,
         limit=20
     ):
+        '''
+        nodes:
+            - subreddit
+        edges:
+            -
+        '''
         subreddits = self.reddit.subreddits.search(
             keyword, limit=limit)
 
@@ -53,6 +65,14 @@ class Reddit:
         sort="top",
         time_filter="month"
     ):
+        '''
+        nodes:
+            - subreddit
+            - submission
+            - redditor
+        edges:
+            - submission
+        '''
         subreddit = self.reddit.subreddit(subreddit_name)
         if keyword == "":
 
@@ -98,6 +118,16 @@ class Reddit:
         time_filter="month",
         top_level=False
     ):
+        '''
+        nodes:
+            - subreddit
+            - submission
+            - redditor
+            - comment
+        edges:
+            - submission
+            - comment
+        '''
 
         submission = self.reddit.submission(id=submission_id)
 
@@ -155,6 +185,16 @@ class Reddit:
         sort="new",
         time_filter="month"
     ):
+        '''
+        nodes:
+            - subreddit
+            - submission
+            - redditor
+            - comment
+        edges:
+            - submission
+            - comment
+        '''
         redditor = self.reddit.redditor(username)
 
         if sort == "top":
@@ -162,13 +202,13 @@ class Reddit:
                 limit=limit, time_filter=time_filter)
         elif sort == "hot":
             comments = redditor.comments.hot(
-                limit=limit, time_filter=time_filter)
+                limit=limit)
         elif sort == "controversial":
             comments = redditor.comments.controversial(
                 limit=limit, time_filter=time_filter)
         else:
             comments = redditor.comments.new(
-                limit=limit, time_filter=time_filter)
+                limit=limit)
 
         graph = Graph(option=self.option)
         i = 0
@@ -215,6 +255,14 @@ class Reddit:
         sort="new",
         time_filter="month"
     ):
+        '''
+        nodes:
+            - subreddit
+            - submission
+            - redditor
+        edges:
+            - submission
+        '''
 
         redditor = self.reddit.redditor(username)
 
@@ -223,13 +271,13 @@ class Reddit:
                 limit=limit, time_filter=time_filter)
         elif sort == "hot":
             submissions = redditor.submissions.hot(
-                limit=limit, time_filter=time_filter)
+                limit=limit)
         elif sort == "controversial":
             submissions = redditor.submissions.controversial(
                 limit=limit, time_filter=time_filter)
         else:
             submissions = redditor.submissions.new(
-                limit=limit, time_filter=time_filter)
+                limit=limit)
 
         graph = Graph(option=self.option)
         for submission in submissions:
