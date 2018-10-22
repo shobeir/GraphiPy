@@ -68,6 +68,8 @@ def main():
     df = tumblr.fetch_posts_tagged(tag="overwatch")
     df.export_all_CSV("tumblr_posts_tagged")
 
+    #df = tumblr.fetch_followers("olivia-liupeixuan")
+    #df.export_all_CSV("tumblr_follower_blogs")
 
 if __name__ == '__main__':
     main()
