@@ -1,6 +1,8 @@
 import requests
 import json
-from graph import Graph, Node, Edge
+from graph import Node, Edge
+from graph_dict import Graph_Dict
+from graph_pandas import Graph_Pandas
 
 class PinterestOfficialAPI:
     def __init__(self, api):
@@ -31,15 +33,15 @@ class PinterestOfficialAPI:
         return result
 
     def fetch_pinterest_user_by_username(self, username):
-        graph = Graph()
+        graph = Graph_Dict() 
         result = self.get_single_user(username)
         user = PinterestUser(result["data"])
         graph.create_node(user)
-        graph.generate_df("node")
+        # graph.generate_df("node")
         return graph
 
     def fetch_pinterest_board_by_url(self, board_url, with_pins=True, with_creator=True):
-        graph = Graph() 
+        graph = Graph_Dict() 
         board_result = self.get_single_board(board_url)
         board = PinterestBoard(board_result["data"])
         graph.create_node(board)
@@ -60,8 +62,8 @@ class PinterestOfficialAPI:
             graph.create_edge(Edge(board.get_id(), single_pin.get_id(), "board"))
             graph.create_edge(Edge(single_pin.get_id(), board.get_id(), "pin"))
         
-        graph.generate_df("node")
-        graph.generate_df("edge")
+        # graph.generate_df("node")
+        # graph.generate_df("edge")
         return graph
 
     def fetch_pinterest_pin_by_id(self, pin_id, with_board=True):
@@ -86,8 +88,8 @@ class PinterestOfficialAPI:
         graph.create_edge(Edge(pin.get_id(), board.get_id(), "pin"))
         graph.create_edge(Edge(board.get_id(), pin.get_id(), "board"))
         
-        graph.generate_df("node")
-        graph.generate_df("edge")
+        # graph.generate_df("node")
+        # graph.generate_df("edge")
         return graph
 
     def fetch_pinterest_my_usernode(self):
@@ -99,7 +101,7 @@ class PinterestOfficialAPI:
         graph = Graph()
         graph.create_node(user)
         
-        graph.generate_df("node")
+        # graph.generate_df("node")
         return graph
 
     def fetch_pinterest_my_boards(self):
@@ -120,8 +122,8 @@ class PinterestOfficialAPI:
             graph.create_edge(Edge(board.get_id(), user.get_id(), "board"))
             graph.create_edge(Edge(user.get_id(), board.get_id(), "user"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
+        # graph.generate_df("node")
+        # graph.generate_df("edge")
         return graph
 
     def fetch_pinterest_my_pins(self):
