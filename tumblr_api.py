@@ -1,6 +1,4 @@
 import pytumblr
-import pandas as pd
-import pprint
 from graph import Graph, Node, Edge
 
 
@@ -41,7 +39,25 @@ class Tumblr:
         graph.generate_df("edge")
         return graph
 
-    # the api function call "blog_followers" doesn't seem to work
+    # the api function call "blog_followers" only works with the authorized user (aka myself)
+    def fetch_followers(
+            self,
+            blog_name,
+            limit=20,
+            offset=0
+    ):
+        followers = self.tumblr.followers(blog_name, limit=limit, offset=offset)['users']
+        blog = self.tumblr.blog_info(blog_name)['blog']
+
+        graph = Graph()
+        graph.create_node(Blog(blog))
+        for follower in followers:
+            graph.create_node(Blog(follower))
+            graph.create_edge(Edge(blog['name'], follower['name'], "follower"))
+
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
 
     def fetch_published_posts(
         self,
