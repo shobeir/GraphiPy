@@ -1,64 +1,73 @@
 import praw
-import pandas as pd
-import pprint
-from graph import Graph, Node, Edge
+
+from api.graph.graph import BaseNode as Node, BaseEdge as Edge
 
 
 class Reddit:
-    def __init__(self, api, option="pandas"):
+    '''the Reddit object that is powered by PRAW'''
+
+    def __init__(self, api):
         self.reddit = praw.Reddit(
             client_id=api["client_id"],
             client_secret=api["client_secret"],
             user_agent=api["user_agent"]
         )
-        self.option = option
 
     def fetch_subreddits_by_name(
         self,
+        graph,
         keyword,
         limit=20,
         nsfw=True,
         exact=False
     ):
         '''
+        Fetches subreddits based on matching keyword
+
         nodes:
             - subreddit
         edges:
             -
         '''
+
+        # searches subreddit by keyword
         subreddits = self.reddit.subreddits.search_by_name(
             keyword, include_nsfw=nsfw, exact=exact)
 
-        graph = Graph(option=self.option)
+        # create new node for every subreddit found
+        i = 0
         for subreddit in subreddits:
+            if i == limit:
+                break
+            i += 1
             graph.create_node(Subreddit(subreddit))
-
-        graph.generate_df("node")
-        return graph
 
     def fetch_subreddits_by_topic(
         self,
+        graph,
         keyword,
         limit=20
     ):
         '''
+        Fetches subreddits based on matching topic
+
         nodes:
             - subreddit
         edges:
             -
         '''
+
+        # searches subreddit by related topic
         subreddits = self.reddit.subreddits.search(
             keyword, limit=limit)
 
-        graph = Graph(option=self.option)
+        # create new node for every subreddit found
         for subreddit in subreddits:
             graph.create_node(Subreddit(subreddit))
 
-        graph.generate_df("node")
-        return graph
-
     def fetch_subreddit_submissions(
         self,
+        graph,
         keyword="",
         subreddit_name="all",
         limit=20,
@@ -66,6 +75,8 @@ class Reddit:
         time_filter="month"
     ):
         '''
+        Fetches subreddit's submissions based on parameters
+
         nodes:
             - subreddit
             - submission
@@ -73,9 +84,12 @@ class Reddit:
         edges:
             - submission
         '''
-        subreddit = self.reddit.subreddit(subreddit_name)
-        if keyword == "":
 
+        # get subreddit object
+        subreddit = self.reddit.subreddit(subreddit_name)
+
+        # gets submissions on a subreddit sorted by parameter
+        if keyword == "":
             if sort == "hot":
                 submissions = subreddit.hot(
                     limit=limit, time_filter=time_filter)
@@ -91,34 +105,37 @@ class Reddit:
             else:
                 submissions = subreddit.top(
                     limit=limit, time_filter=time_filter)
+
+        # gets submissions on a subreddit by keyword
         else:
             submissions = subreddit.search(
                 keyword, sort=sort, time_filter=time_filter, limit=limit)
 
-        graph = Graph(option=self.option)
-        for submission in submissions:
-            graph.create_node(Redditor(submission.author))
-
-            graph.create_node(Submission(submission))
-            graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id, "submission"))
-            graph.create_edge(
-                Edge(submission.id, submission.subreddit.id, "submission"))
+        # Subreddit Node
         graph.create_node(Subreddit(subreddit))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
-        return graph
+        for submission in submissions:
+            # Redditor Node
+            graph.create_node(Redditor(submission.author))
+
+            # Submission Node
+            graph.create_node(Submission(submission))
+            graph.create_edge(
+                Edge(submission.author.fullname[3:], submission.id, "POSTED"))
+            graph.create_edge(
+                Edge(submission.id, submission.subreddit.id, "ON"))
 
     def fetch_submission_comments(
         self,
+        graph,
         submission_id,
         limit=20,
         sort="top",
-        time_filter="month",
         top_level=False
     ):
         '''
+        Fetches comments of a submission
+
         nodes:
             - subreddit
             - submission
@@ -133,23 +150,41 @@ class Reddit:
 
         submission.comment_sort = sort
 
+        # maximum replacement is 32 (limitation of API)
         if limit is None or limit > 32:
             submission.comments.replace_more(limit=None)
         else:
             submission.comments.replace_more(limit=limit//10)
 
-        i = 0
-        j = 0
+        # gets top level comment or not based on parameter
         if top_level is True:
             comments = submission.comments
         else:
             comments = submission.comments.list()
 
-        graph = Graph(option=self.option)
+        # Redditor Node (Author)
+        graph.create_node(Redditor(submission.author))
+
+        # Subreddit Node
+        graph.create_node(Subreddit(submission.subreddit))
+
+        # Submission Node Edge
+        graph.create_node(Submission(submission))
+        graph.create_edge(
+            Edge(submission.author.fullname[3:], submission.id, "POSTED"))
+        graph.create_edge(
+            Edge(submission.id, submission.subreddit.id, "ON"))
+
+        i = 0
         for comment in comments:
+
+            # if reached number of comments desired
+            if i == limit:
+                break
+            i += 1
+
+            # skips deleted comment
             if comment.author is None:
-                if j > limit + 100:
-                    break
                 continue
             # Redditor Node
             graph.create_node(Redditor(comment.author))
@@ -157,35 +192,21 @@ class Reddit:
             # Comment Node Edge
             graph.create_node(Comment(comment))
             graph.create_edge(
-                Edge(comment.author.fullname[3:], comment.id, "comment"))
+                Edge(comment.author.fullname[3:], comment.id, "COMMENTED"))
             graph.create_edge(
-                Edge(comment.id, comment.parent_id[3:], "comment"))
-            i += 1
-            if i == limit:
-                break
-
-        # Submission Node Edge
-        graph.create_node(Submission(submission))
-        graph.create_edge(
-            Edge(submission.author.fullname[3:], submission.id, "submission"))
-        graph.create_edge(
-            Edge(submission.id, submission.subreddit.id, "submission"))
-
-        # Subreddit Node
-        graph.create_node(Subreddit(submission.subreddit))
-
-        graph.generate_df("node")
-        graph.generate_df("edge")
-        return graph
+                Edge(comment.id, comment.parent_id[3:], "ON"))
 
     def fetch_redditor_comments(
         self,
+        graph,
         username,
         limit=20,
         sort="new",
         time_filter="month"
     ):
         '''
+        Fetches comments a redditor has posted
+
         nodes:
             - subreddit
             - submission
@@ -197,6 +218,7 @@ class Reddit:
         '''
         redditor = self.reddit.redditor(username)
 
+        # set sort parameter
         if sort == "top":
             comments = redditor.comments.top(
                 limit=limit, time_filter=time_filter)
@@ -210,52 +232,50 @@ class Reddit:
             comments = redditor.comments.new(
                 limit=limit)
 
-        graph = Graph(option=self.option)
+        # Redditor Node
+        graph.create_node(Redditor(redditor))
+
         i = 0
         for comment in comments:
+
+            # if reached number of comments desired
+            if i == limit:
+                break
+            i += 1
+
+            # skips deleted comment
             if comment.author is None:
                 continue
 
-            # Redditor Node
-            graph.create_node(Redditor(comment.author))
-
-            # Submission Node Edge
             submission = self.reddit.submission(id=comment.link_id[3:])
-            graph.create_node(Submission(submission))
-            graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id, "submission"))
-            graph.create_edge(
-                Edge(submission.id, submission.subreddit.id, "submission"))
 
             # Subreddit Node
             graph.create_node(Subreddit(submission.subreddit))
+
+            # Submission Node Edge
+            graph.create_node(Submission(submission))
+            graph.create_edge(
+                Edge(submission.author.fullname[3:], submission.id, "POSTED"))
+            graph.create_edge(
+                Edge(submission.id, submission.subreddit.id, "ON"))
 
             # Comment Node Edge
             graph.create_node(Comment(comment))
             graph.create_edge(
                 Edge(comment.author.fullname[3:], comment.id,
-                     "comment"))
-            graph.create_edge(
-                Edge(comment.id, comment.parent_id[3:], "comment"))
-
-            i += 1
-            if i == limit:
-                break
-
-        graph.create_node(Redditor(redditor))
-
-        graph.generate_df("node")
-        graph.generate_df("edge")
-        return graph
+                     "COMMENTED"))
 
     def fetch_redditor_submissions(
         self,
+        graph,
         username,
         limit=20,
         sort="new",
         time_filter="month"
     ):
         '''
+        Fetches submissions a redditor has posted
+
         nodes:
             - subreddit
             - submission
@@ -266,6 +286,7 @@ class Reddit:
 
         redditor = self.reddit.redditor(username)
 
+        # set sort parameter
         if sort == "top":
             submissions = redditor.submissions.top(
                 limit=limit, time_filter=time_filter)
@@ -279,7 +300,9 @@ class Reddit:
             submissions = redditor.submissions.new(
                 limit=limit)
 
-        graph = Graph(option=self.option)
+        # Redditor Node
+        graph.create_node(Redditor(redditor))
+
         for submission in submissions:
 
             # Subreddit Node
@@ -288,19 +311,14 @@ class Reddit:
             # Submission Node Edge
             graph.create_node(Submission(submission))
             graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id, "submission"))
+                Edge(submission.author.fullname[3:], submission.id, "POSTED"))
             graph.create_edge(
-                Edge(submission.id, submission.subreddit.id, "submission"))
-
-        # Redditor Node
-        graph.create_node(Redditor(redditor))
-
-        graph.generate_df("node")
-        graph.generate_df("edge")
-        return graph
+                Edge(submission.id, submission.subreddit.id, "ON"))
 
 
-class Redditor (Node):
+class Redditor(Node):
+    '''Reddit's users are called Redditors'''
+
     def __init__(
         self,
         redditor
@@ -314,7 +332,9 @@ class Redditor (Node):
         self.upvotes = redditor.link_karma + redditor.comment_karma
 
 
-class Submission (Node):
+class Submission(Node):
+    '''Reddit's posts are called Submissions'''
+
     def __init__(
         self,
         submission
@@ -356,13 +376,15 @@ class Submission (Node):
         self.subreddit_name = submission.subreddit.display_name
 
 
-class Subreddit (Node):
+class Subreddit(Node):
+    '''Reddit's communities are called Subreddits'''
+
     def __init__(
         self,
         subreddit
     ):
         Node.__init__(self, subreddit.id,
-                      subreddit.display_name_prefixed, "subreddit")
+                      "subreddit", "subreddit")
         self.display_name = subreddit.display_name
         self.created = subreddit.created
         self.description = subreddit.description
@@ -374,7 +396,9 @@ class Subreddit (Node):
         self.url = "https://reddit.com"+subreddit.url
 
 
-class Comment (Node):
+class Comment(Node):
+    '''Comments of a post'''
+
     def __init__(
         self,
         comment
