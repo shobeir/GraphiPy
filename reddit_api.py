@@ -1,6 +1,6 @@
 import praw
 
-from api.graph.graph import BaseNode as Node, BaseEdge as Edge
+from graph import BaseNode as Node, BaseEdge as Edge
 
 
 class Reddit:
