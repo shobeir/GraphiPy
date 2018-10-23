@@ -40,7 +40,7 @@ class BaseEdge:
         self._id = ''.join([source, target, label])
 
     def get_id(self):
-        return self.Source + self.Target
+        return self._id
 
     def get_label_attribute(self):
         return self.label_attribute
