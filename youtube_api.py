@@ -137,6 +137,14 @@ class Youtube:
         channel_node = ChannelNode(response['items'][0])
         return channel_node
 
+    def create_node_by_video_id(self, video_id):
+        response = self.youtube.videos().list(
+            id=video_id,
+            part='snippet,contentDetails,statistics'
+        )
+        video_node = VideoNode(response['items'][0])
+        return video_node
+
     def fetch_channel_by_id(self, channel_id):
         graph = Graph(option=self.option)
         graph.create_node(self.create_node_by_channel_id(channel_id))
@@ -165,6 +173,25 @@ class Youtube:
         graph.generate_df("node")
         graph.generate_df("edge")
         return graph
+
+    def fetch_playlistItems_by_playlist_id(self, playlist_id):
+        graph = Graph(option=self.option)
+        response = self.youtube.playlistItems().list(
+            part='snippet,contentDetails',
+            maxResults=25,
+            playlistId=playlist_id
+        ).execute()
+
+        # TODO finish this
+
+        for item in response.get('items', []):
+            video_id = item['contentDetails']['videoId']
+            video_node = self.create_node_by_video_id(video_id)
+
+            graph.create_node(video_node)
+            graph.create_node()
+
+
 
     # Fetches video with its comments
     def fetch_video_by_id_with_comments(self, video_id):
