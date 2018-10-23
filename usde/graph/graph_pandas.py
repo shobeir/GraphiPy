@@ -1,5 +1,6 @@
-from api.graph.graph import BaseGraph
 import pandas as pd
+
+from usde.graph.graph_base import BaseGraph
 
 
 class PandasGraph(BaseGraph):

@@ -1,5 +1,6 @@
 from py2neo import Graph
-from api.graph.graph import BaseGraph
+
+from usde.graph.graph_base import BaseGraph
 
 
 class NeoGraph(BaseGraph):

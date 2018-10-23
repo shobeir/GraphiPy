@@ -10,7 +10,7 @@ from oauth2client.tools import run_flow
 
 from googleapiclient.discovery import build
 
-from graph import Node, Edge, Graph
+from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge, BaseGraph as Graph
 
 
 def get_comments(youtube, video_id, channel_id):
@@ -64,7 +64,8 @@ class PlaylistNode(Node):
             playlist_id = playlist['id']
         else:
             playlist_id = playlist['id']['playlistId']
-        Node.__init__(self, playlist_id, playlist['snippet']['title'], "playlist")
+        Node.__init__(self, playlist_id,
+                      playlist['snippet']['title'], "playlist")
 
         self.published_at = playlist['snippet']['publishedAt']
         self.description = playlist['snippet']['description']
@@ -72,7 +73,8 @@ class PlaylistNode(Node):
 
 class CommentNode(Node):
     def __init__(self, comment):
-        Node.__init__(self, comment['id'], comment['snippet']['textDisplay'], "comment")
+        Node.__init__(self, comment['id'],
+                      comment['snippet']['textDisplay'], "comment")
 
         # Attributes:
         self.updated_at = comment['snippet']['updatedAt']
@@ -190,9 +192,11 @@ class Youtube:
             top_level_comment_id = top_level_comment['id']
             top_level_channel_id = top_level_comment['snippet']['authorChannelId']['value']
 
-            graph.create_node(self.create_node_by_channel_id(top_level_channel_id))
+            graph.create_node(
+                self.create_node_by_channel_id(top_level_channel_id))
             graph.create_node(CommentNode(top_level_comment))
-            graph.create_edge(Edge(top_level_channel_id, top_level_comment_id, "comment"))
+            graph.create_edge(
+                Edge(top_level_channel_id, top_level_comment_id, "comment"))
             graph.create_edge(Edge(top_level_comment_id, video_id, "comment"))
 
             if 'replies' in comment_thread:
@@ -203,10 +207,13 @@ class Youtube:
 
                     # connect reply to comment
                     graph.create_node(CommentNode(reply))
-                    graph.create_edge(Edge(reply_id, top_level_comment_id, "comment"))
+                    graph.create_edge(
+                        Edge(reply_id, top_level_comment_id, "comment"))
                     # connect user to reply
-                    graph.create_node(self.create_node_by_channel_id(reply_channel_id))
-                    graph.create_edge(Edge(reply_channel_id, reply_id, "comment"))
+                    graph.create_node(
+                        self.create_node_by_channel_id(reply_channel_id))
+                    graph.create_edge(
+                        Edge(reply_channel_id, reply_id, "comment"))
                     graph.create_edge(Edge(reply_id, video_id, "comment"))
 
         graph.generate_df("node")
@@ -249,7 +256,8 @@ class Youtube:
 
                 channel_id = search_result['snippet']['channelId']
                 graph.create_node(self.create_node_by_channel_id(channel_id))
-                graph.create_edge(Edge(channel_id, playlist_id, "createPlaylist"))
+                graph.create_edge(
+                    Edge(channel_id, playlist_id, "createPlaylist"))
 
         graph.generate_df("node")
         graph.generate_df("edge")

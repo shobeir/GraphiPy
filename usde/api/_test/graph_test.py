@@ -1,7 +1,7 @@
-from ..graph.graph import BaseEdge, BaseNode
-from ..graph.graph_dict import DictGraph
-from ..graph.graph_neo4j import NeoGraph
-from ..graph.graph_pandas import PandasGraph
+from usde.graph.graph_base import BaseEdge, BaseNode
+from usde.graph.graph_dict import DictGraph
+from usde.graph.graph_neo4j import NeoGraph
+from usde.graph.graph_pandas import PandasGraph
 
 import time
 

@@ -1,6 +1,6 @@
 import praw
 
-from ..graph.graph import BaseNode as Node, BaseEdge as Edge
+from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
 
 class Reddit:

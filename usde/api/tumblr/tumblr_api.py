@@ -1,5 +1,5 @@
 import pytumblr
-from graph import Graph, Node, Edge
+from usde.graph.graph_base import BaseGraph as Graph, BaseNode as Node, BaseEdge as Edge
 
 
 def create_edge(source, target):
@@ -26,14 +26,16 @@ class Tumblr:
             limit=20,
             offset=0
     ):
-        followed_blogs = self.tumblr.blog_following(blog_name, limit=limit, offset=offset)['blogs']
+        followed_blogs = self.tumblr.blog_following(
+            blog_name, limit=limit, offset=offset)['blogs']
         blog = self.tumblr.blog_info(blog_name)['blog']
 
         graph = Graph()
         graph.create_node(Blog(blog))
         for followed_blog in followed_blogs:
             graph.create_node(Blog(followed_blog))
-            graph.create_edge(Edge(blog['name'], followed_blog['name'], "followed_blog"))
+            graph.create_edge(
+                Edge(blog['name'], followed_blog['name'], "followed_blog"))
 
         graph.generate_df("node")
         graph.generate_df("edge")
@@ -46,7 +48,8 @@ class Tumblr:
             limit=20,
             offset=0
     ):
-        followers = self.tumblr.followers(blog_name, limit=limit, offset=offset)['users']
+        followers = self.tumblr.followers(
+            blog_name, limit=limit, offset=offset)['users']
         blog = self.tumblr.blog_info(blog_name)['blog']
 
         graph = Graph()
@@ -67,13 +70,15 @@ class Tumblr:
         limit=20,
         offset=0
     ):
-        published_posts = self.tumblr.posts(blog_name, type=type, tag=tag, limit=limit, offset=offset)['posts']
+        published_posts = self.tumblr.posts(
+            blog_name, type=type, tag=tag, limit=limit, offset=offset)['posts']
         blog = self.tumblr.blog_info(blog_name)['blog']
         graph = Graph()
         graph.create_node(Blog(blog))
         for published_post in published_posts:
             graph.create_node(Post(published_post))
-            graph.create_edge(Edge(blog['name'], str(published_post['id']), "published_post"))
+            graph.create_edge(Edge(blog['name'], str(
+                published_post['id']), "published_post"))
 
         graph.generate_df("node")
         graph.generate_df("edge")
@@ -87,14 +92,16 @@ class Tumblr:
         before=0,
         after=0
     ):
-        liked_posts = self.tumblr.blog_likes(blog_name, limit=limit, offset=offset, before=before, after=after)['liked_posts']
+        liked_posts = self.tumblr.blog_likes(
+            blog_name, limit=limit, offset=offset, before=before, after=after)['liked_posts']
         blog = self.tumblr.blog_info(blog_name)['blog']
 
         graph = Graph()
         graph.create_node(Blog(blog))
         for liked_post in liked_posts:
             graph.create_node(Post(liked_post))
-            graph.create_edge(Edge(blog['name'], str(liked_post['id']), "liked_post"))
+            graph.create_edge(
+                Edge(blog['name'], str(liked_post['id']), "liked_post"))
 
         graph.generate_df("node")
         graph.generate_df("edge")
@@ -107,14 +114,16 @@ class Tumblr:
         before=0,
         filter=""
     ):
-        posts_tagged = self.tumblr.tagged(tag=tag, limit=limit, before=before, filter=filter)
+        posts_tagged = self.tumblr.tagged(
+            tag=tag, limit=limit, before=before, filter=filter)
 
         graph = Graph()
         for post_tagged in posts_tagged:
             graph.create_node(Post(post_tagged))
             blog = self.tumblr.blog_info(post_tagged['blog_name'])['blog']
             graph.create_node(Blog(blog))
-            graph.create_edge(Edge(blog['name'], str(post_tagged['id']), "published_post"))
+            graph.create_edge(Edge(blog['name'], str(
+                post_tagged['id']), "published_post"))
 
         graph.generate_df("node")
         graph.generate_df("edge")
@@ -142,10 +151,11 @@ class Post (Node):
         self.blog_name = post['blog_name'],
         self.post_url = post['post_url'],
         self.type = post['type'],
-        self.timestamp = post['timestamp'],  # The time of the post, in seconds since the epoch
-        self.date = post['date'],  # The GMT date and time of the post, as a string
-        self.format = post['format'],  # String The post format: html or markdown
+        # The time of the post, in seconds since the epoch
+        self.timestamp = post['timestamp'],
+        # The GMT date and time of the post, as a string
+        self.date = post['date'],
+        # String The post format: html or markdown
+        self.format = post['format'],
         self.tags = post['tags'],  # Array(string) Tags applied to the post
         self.state = post['state']
-
-
