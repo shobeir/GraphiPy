@@ -123,7 +123,11 @@ class Reddit:
             graph.create_edge(
                 Edge(submission.author.fullname[3:], submission.id, "POSTED"))
             graph.create_edge(
+                Edge(submission.id, submission.author.fullname[3:], "CREATED_BY"))
+            graph.create_edge(
                 Edge(submission.id, submission.subreddit.id, "ON"))
+            graph.create_edge(
+                Edge(submission.subreddit.id, submission.id, "HAS"))
 
     def fetch_submission_comments(
         self,
@@ -170,10 +174,15 @@ class Reddit:
 
         # Submission Node Edge
         graph.create_node(Submission(submission))
+
         graph.create_edge(
             Edge(submission.author.fullname[3:], submission.id, "POSTED"))
         graph.create_edge(
+            Edge(submission.id, submission.author.fullname[3:], "CREATED_BY"))
+        graph.create_edge(
             Edge(submission.id, submission.subreddit.id, "ON"))
+        graph.create_edge(
+            Edge(submission.subreddit.id, submission.id, "HAS_POST"))
 
         i = 0
         for comment in comments:
@@ -194,7 +203,11 @@ class Reddit:
             graph.create_edge(
                 Edge(comment.author.fullname[3:], comment.id, "COMMENTED"))
             graph.create_edge(
+                Edge(comment.id, comment.author.fullname[3:], "CREATED_BY"))
+            graph.create_edge(
                 Edge(comment.id, comment.parent_id[3:], "ON"))
+            graph.create_edge(
+                Edge(comment.parent_id[3:], comment.id, "HAS_COMMENT"))
 
     def fetch_redditor_comments(
         self,
@@ -208,12 +221,9 @@ class Reddit:
         Fetches comments a redditor has posted
 
         nodes:
-            - subreddit
-            - submission
             - redditor
             - comment
         edges:
-            - submission
             - comment
         """
         redditor = self.reddit.redditor(username)
@@ -247,23 +257,12 @@ class Reddit:
             if comment.author is None:
                 continue
 
-            submission = self.reddit.submission(id=comment.link_id[3:])
-
-            # Subreddit Node
-            graph.create_node(Subreddit(submission.subreddit))
-
-            # Submission Node Edge
-            graph.create_node(Submission(submission))
-            graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id, "POSTED"))
-            graph.create_edge(
-                Edge(submission.id, submission.subreddit.id, "ON"))
-
             # Comment Node Edge
             graph.create_node(Comment(comment))
             graph.create_edge(
-                Edge(comment.author.fullname[3:], comment.id,
-                     "COMMENTED"))
+                Edge(comment.author.fullname[3:], comment.id, "COMMENTED"))
+            graph.create_edge(
+                Edge(comment.id, comment.author.fullname[3:], "CREATED_BY"))
 
     def fetch_redditor_submissions(
         self,
@@ -313,7 +312,11 @@ class Reddit:
             graph.create_edge(
                 Edge(submission.author.fullname[3:], submission.id, "POSTED"))
             graph.create_edge(
+                Edge(submission.id, submission.author.fullname[3:], "POSTED_BY"))
+            graph.create_edge(
                 Edge(submission.id, submission.subreddit.id, "ON"))
+            graph.create_edge(
+                Edge(submission.subreddit.id, submission.id, "HAS"))
 
 
 class Redditor(Node):
