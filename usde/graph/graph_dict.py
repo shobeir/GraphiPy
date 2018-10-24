@@ -6,7 +6,6 @@ from usde.graph.graph_base import BaseGraph
 class DictGraph(BaseGraph):
     def __init__(self):
         BaseGraph.__init__(self)
-        self.list = []
         # a dict of nodes and edges, key=label, value={id, node}
         self.nodes = {}
         self.edges = {}
