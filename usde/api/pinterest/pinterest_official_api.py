@@ -8,6 +8,7 @@ class PinterestOfficialAPI:
     def __init__(self, api):
         self.access_token = api["access_token"]
 
+    # get a single user info in JSON format by username
     def get_single_user(self, username):
         url = "https://api.pinterest.com/v1/users/" + username + "/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cimage%2Caccount_type%2Cbio%2Ccounts%2Ccreated_at"
@@ -15,6 +16,7 @@ class PinterestOfficialAPI:
         result = json.loads(response.text)
         return result
 
+    # get a single board info in JSON format by board_url
     def get_single_board(self, board_url):
         url = "https://api.pinterest.com/v1/boards/" + board_url + "/?access_token=" + self.access_token + \
             "&fields=id%2Cname%2Curl%2Ccounts%2Ccreated_at%2Ccreator%2Cdescription%2Cimage%2Cprivacy"
@@ -22,6 +24,7 @@ class PinterestOfficialAPI:
         result = json.loads(response.text)
         return result
 
+    # get a single pin info in JSON format by pin_id
     def get_single_pin(self, pin_id):
         url = "https://api.pinterest.com/v1/pins/" + pin_id + "/?access_token=" + self.access_token + \
             "&fields=note%2Curl%2Cboard%2Ccolor%2Ccounts%2Ccreated_at%2Ccreator%2Cimage%2Cid"
@@ -29,6 +32,7 @@ class PinterestOfficialAPI:
         result = json.loads(response.text)
         return result
 
+    # get all pins on one board in JSON format by board_url
     def get_pins_from_board(self, board_url):
         url = "https://api.pinterest.com/v1/boards/" + board_url + \
             "/pins/?access_token=" + self.access_token + "&fields=id"
@@ -36,14 +40,15 @@ class PinterestOfficialAPI:
         result = json.loads(response.text)
         return result
 
+    # get the graph for a single user by username
     def fetch_pinterest_user_by_username(self, graph, username):
         result = self.get_single_user(username)
         user = PinterestUser(result["data"])
         graph.create_node(user)
-        # graph.generate_df("node")
         return graph
-
-    def fetch_pinterest_board_by_url(self, graph, board_url, with_pins=True, with_creator=True):
+ 
+    # get the graph for a single board by board_url
+    def fetch_pinterest_board_by_url(self, graph, board_url):
         board_result = self.get_single_board(board_url)
         board = PinterestBoard(board_result["data"])
         graph.create_node(board)
@@ -64,12 +69,11 @@ class PinterestOfficialAPI:
             graph.create_edge(
                 Edge(board.get_id(), single_pin.get_id(), "board"))
             graph.create_edge(Edge(single_pin.get_id(), board.get_id(), "pin"))
-
-        # graph.generate_df("node")
-        # graph.generate_df("edge")
+    
         return graph
 
-    def fetch_pinterest_pin_by_id(self, graph, pin_id, with_board=True):
+    # get the graph for a single pin by pin_id
+    def fetch_pinterest_pin_by_id(self, graph, pin_id):
 
         pin_result = self.get_single_pin(pin_id)
         pin = PinterestPin(pin_result["data"])
@@ -92,10 +96,9 @@ class PinterestOfficialAPI:
         graph.create_edge(Edge(pin.get_id(), board.get_id(), "pin"))
         graph.create_edge(Edge(board.get_id(), pin.get_id(), "board"))
 
-        # graph.generate_df("node")
-        # graph.generate_df("edge")
         return graph
 
+    # get the graph for mine as user node
     def fetch_pinterest_my_usernode(self, graph):
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
@@ -103,12 +106,11 @@ class PinterestOfficialAPI:
         result = json.loads(response.text)
 
         user = PinterestUser(result["data"])
-
         graph.create_node(user)
 
-        # graph.generate_df("node")
         return graph
 
+    # get the graph of my boards 
     def fetch_pinterest_my_boards(self, graph):
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
@@ -129,10 +131,9 @@ class PinterestOfficialAPI:
             graph.create_edge(Edge(board.get_id(), user.get_id(), "board"))
             graph.create_edge(Edge(user.get_id(), board.get_id(), "user"))
 
-        # graph.generate_df("node")
-        # graph.generate_df("edge")
         return graph
 
+    # get the graph of my pins
     def fetch_pinterest_my_pins(self, graph):
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
@@ -153,10 +154,9 @@ class PinterestOfficialAPI:
             graph.create_edge(Edge(pin.get_id(), user.get_id(), "pin"))
             graph.create_edge(Edge(user.get_id(), pin.get_id(), "user"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
+    # get the graph of my followers
     def fetch_pinterest_my_followers(self, graph):
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
@@ -176,10 +176,9 @@ class PinterestOfficialAPI:
             graph.create_node(follower)
             graph.create_edge(Edge(user.get_id(), follower.get_id(), "user"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
+    # get the graph of my following users
     def fetch_pinterest_my_following_users(self, graph):
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
@@ -199,10 +198,9 @@ class PinterestOfficialAPI:
             graph.create_node(following)
             graph.create_edge(Edge(user.get_id(), following.get_id(), "user"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
+    # get the graph of my following boards
     def fetch_pinterest_my_following_boards(self, graph):
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
@@ -245,15 +243,13 @@ class PinterestOfficialAPI:
                 graph.create_edge(
                     Edge(single_pin.get_id(), followingboard.get_id(), "pin"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
 
+# User node of Pinterest
 class PinterestUser(Node):
     def __init__(self, result):
         label = result["first_name"] + " " + result["last_name"]
-        # Node.__init__(self, id, label, label_attribute)
         Node.__init__(self, result["id"], label, "user")
         self.bio = result["bio"]
         self.first_name = result["first_name"]
@@ -268,6 +264,7 @@ class PinterestUser(Node):
         self.boards_count = result["counts"]["boards"]
 
 
+# Board node of Pinterest
 class PinterestBoard(Node):
     def __init__(self, result):
         Node.__init__(self, result["id"], result["name"], "board")
@@ -281,6 +278,7 @@ class PinterestBoard(Node):
         self.description = result["description"]
 
 
+# Pin node of Pinterest
 class PinterestPin(Node):
     def __init__(self, result):
         Node.__init__(self, result["id"], "pin_" + result["id"], "pin")
