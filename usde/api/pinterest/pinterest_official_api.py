@@ -58,17 +58,16 @@ class PinterestOfficialAPI:
         user = PinterestUser(user_result["data"])
         graph.create_node(user)
 
-        graph.create_edge(Edge(board.get_id(), user.get_id(), "board"))
-        graph.create_edge(Edge(user.get_id(), board.get_id(), "user"))
+        graph.create_edge(Edge(board.get_id(), user.get_id(), "CREATED_BY"))
+        graph.create_edge(Edge(user.get_id(), board.get_id(), "CREATED"))
 
         pin_result = self.get_pins_from_board(board_url)
         for pin in pin_result["data"]:
             single_pin_result = self.get_single_pin(pin["id"])
             single_pin = PinterestPin(single_pin_result["data"])
             graph.create_node(single_pin)
-            graph.create_edge(
-                Edge(board.get_id(), single_pin.get_id(), "board"))
-            graph.create_edge(Edge(single_pin.get_id(), board.get_id(), "pin"))
+            graph.create_edge(Edge(board.get_id(), single_pin.get_id(), "HAS"))
+            graph.create_edge(Edge(single_pin.get_id(), board.get_id(), "ON"))
     
         return graph
 
@@ -84,8 +83,8 @@ class PinterestOfficialAPI:
         user = PinterestUser(user_result["data"])
         graph.create_node(user)
 
-        graph.create_edge(Edge(pin.get_id(), user.get_id(), "pin"))
-        graph.create_edge(Edge(user.get_id(), pin.get_id(), "user"))
+        graph.create_edge(Edge(pin.get_id(), user.get_id(), "CREATED_BY"))
+        graph.create_edge(Edge(user.get_id(), pin.get_id(), "CREATED"))
 
         board_url = pin_result["data"]["board"]["url"].split(
             '/')[3] + "/" + pin_result["data"]["board"]["url"].split('/')[4]
@@ -93,8 +92,8 @@ class PinterestOfficialAPI:
         board = PinterestBoard(board_result["data"])
         graph.create_node(board)
 
-        graph.create_edge(Edge(pin.get_id(), board.get_id(), "pin"))
-        graph.create_edge(Edge(board.get_id(), pin.get_id(), "board"))
+        graph.create_edge(Edge(pin.get_id(), board.get_id(), "ON"))
+        graph.create_edge(Edge(board.get_id(), pin.get_id(), "HAS"))
 
         return graph
 
@@ -128,8 +127,8 @@ class PinterestOfficialAPI:
         for myboard in result["data"]:
             board = PinterestBoard(myboard)
             graph.create_node(board)
-            graph.create_edge(Edge(board.get_id(), user.get_id(), "board"))
-            graph.create_edge(Edge(user.get_id(), board.get_id(), "user"))
+            graph.create_edge(Edge(board.get_id(), user.get_id(), "CREATED_BY"))
+            graph.create_edge(Edge(user.get_id(), board.get_id(), "CREATED"))
 
         return graph
 
@@ -151,8 +150,8 @@ class PinterestOfficialAPI:
         for mypin in result["data"]:
             pin = PinterestPin(mypin)
             graph.create_node(pin)
-            graph.create_edge(Edge(pin.get_id(), user.get_id(), "pin"))
-            graph.create_edge(Edge(user.get_id(), pin.get_id(), "user"))
+            graph.create_edge(Edge(pin.get_id(), user.get_id(), "CREATED_BY"))
+            graph.create_edge(Edge(user.get_id(), pin.get_id(), "CREATED"))
 
         return graph
 
@@ -174,7 +173,7 @@ class PinterestOfficialAPI:
         for myfollower in result["data"]:
             follower = PinterestUser(myfollower)
             graph.create_node(follower)
-            graph.create_edge(Edge(user.get_id(), follower.get_id(), "user"))
+            graph.create_edge(Edge(user.get_id(), follower.get_id(), "FOLLOWED_BY"))
 
         return graph
 
@@ -196,7 +195,7 @@ class PinterestOfficialAPI:
         for myfollowing in result["data"]:
             following = PinterestUser(myfollowing)
             graph.create_node(following)
-            graph.create_edge(Edge(user.get_id(), following.get_id(), "user"))
+            graph.create_edge(Edge(user.get_id(), following.get_id(), "FOLLOWING"))
 
         return graph
 
@@ -218,18 +217,15 @@ class PinterestOfficialAPI:
         for myfollowingboard in result["data"]:
             followingboard = PinterestBoard(myfollowingboard)
             graph.create_node(followingboard)
-            graph.create_edge(
-                Edge(user.get_id(), followingboard.get_id(), "user"))
+            graph.create_edge(Edge(user.get_id(), followingboard.get_id(), "FOLLOWING"))
 
             creator_username = myfollowingboard["creator"]["url"].split('/')[3]
             creator_result = self.get_single_user(creator_username)
             creator = PinterestUser(creator_result["data"])
             graph.create_node(creator)
 
-            graph.create_edge(Edge(followingboard.get_id(),
-                                   creator.get_id(), "board"))
-            graph.create_edge(
-                Edge(creator.get_id(), followingboard.get_id(), "user"))
+            graph.create_edge(Edge(followingboard.get_id(), creator.get_id(), "CREATED_BY"))
+            graph.create_edge(Edge(creator.get_id(), followingboard.get_id(), "CREATED"))
 
             board_url = myfollowingboard["url"].split(
                 '/')[3] + "/" + myfollowingboard["url"].split('/')[4]
@@ -238,10 +234,8 @@ class PinterestOfficialAPI:
                 single_pin_result = self.get_single_pin(pin["id"])
                 single_pin = PinterestPin(single_pin_result["data"])
                 graph.create_node(single_pin)
-                graph.create_edge(
-                    Edge(followingboard.get_id(), single_pin.get_id(), "board"))
-                graph.create_edge(
-                    Edge(single_pin.get_id(), followingboard.get_id(), "pin"))
+                graph.create_edge(Edge(followingboard.get_id(), single_pin.get_id(), "HAS"))
+                graph.create_edge(Edge(single_pin.get_id(), followingboard.get_id(), "ON"))
 
         return graph
 

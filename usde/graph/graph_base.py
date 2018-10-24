@@ -1,3 +1,4 @@
+# Base Graph Interface
 class BaseGraph:
     def export_all_CSV(self, prefix):
         pass
@@ -18,6 +19,7 @@ class BaseGraph:
         pass
 
 
+# Base Node class
 class BaseNode:
     def __init__(self, _id, label, label_attribute):
         self._id = _id
@@ -31,6 +33,7 @@ class BaseNode:
         return self.label_attribute
 
 
+# Base Edge class
 class BaseEdge:
     def __init__(self, source, target, label):
         self.Source = source
