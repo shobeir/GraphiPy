@@ -342,26 +342,6 @@ class Community(Node):
             self.website = None
 
 
-
-# class Event (Node):
-#   def __init__(
-#       self,
-#       event
-#   ):
-#       Node.__init__(self, event.id, event.name)
-#       self.label_attribute="event"
-#       self.event_id = event['id']
-#       self.event_name = event['name']
-#       self.description = event['about']
-#       self.attending_count = event['attending_count']
-#       self.declined_count = event['declined_count']
-#       self.start_time: event['start_time']
-#       self.end_time: event['end_time']
-#       self.is_canceled = event['is_canceled']
-#       self.interested_count = event['interested_count']
-#       self.maybe_count: event['maybe_count']
-#       self.noreply_count = event['noreply_count']
-
 class Comment(Node):
     def __init__(
             self,

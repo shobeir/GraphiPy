@@ -4,7 +4,7 @@ import json
 from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
 
-class PinterestOfficialAPI:
+class Pinterest:
     def __init__(self, api):
         self.access_token = api["access_token"]
 
