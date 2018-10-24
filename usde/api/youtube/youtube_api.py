@@ -213,8 +213,6 @@ class Youtube:
         :return: The resulting graph (which adds one ChannelNode)
         """
         graph.create_node(self.create_node_by_channel_id(channel_id))
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
     def fetch_videos_by_topic(self, graph, topic, maxResult=25):
@@ -241,8 +239,6 @@ class Youtube:
                 graph.create_node(self.create_node_by_channel_id(channel_id))
                 graph.create_edge(Edge(channel_id, video_id, "createVideo"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
     def fetch_video_by_id_with_comments(self, graph, video_id):
@@ -271,7 +267,6 @@ class Youtube:
         comments_results = self.youtube.commentThreads().list(
             part="snippet,replies",
             videoId=video_id,
-            channelId=channel_id,
             textFormat="plainText"
         ).execute()
 
@@ -306,8 +301,6 @@ class Youtube:
                         Edge(reply_channel_id, reply_id, "comment"))
                     graph.create_edge(Edge(reply_id, video_id, "comment"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
     def fetch_channels_by_topic(self, graph, topic, maxResult=25):
@@ -331,8 +324,6 @@ class Youtube:
                 channel_id = search_result['snippet']['channelId']
                 graph.create_node(self.create_node_by_channel_id(channel_id))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
     def fetch_playlists_by_topic(self, graph, topic, maxResult=25):
@@ -360,8 +351,6 @@ class Youtube:
                 graph.create_edge(
                     Edge(channel_id, playlist_id, "createPlaylist"))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
     def fetch_playlists_by_channel_id(self, graph, channel_id):
@@ -383,8 +372,6 @@ class Youtube:
             graph.create_node(PlaylistNode(item))
             graph.create_edge(channel_id, playlist_id, "createPlaylist")
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph
 
     def fetch_playlistItems_by_playlist_id(self, graph, playlist_id):
@@ -403,6 +390,4 @@ class Youtube:
         for item in response.get('items', []):
             graph.create_node(VideoNode(item))
 
-        graph.generate_df("node")
-        graph.generate_df("edge")
         return graph

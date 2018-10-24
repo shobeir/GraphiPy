@@ -3,3 +3,5 @@
 .DS_Store
 *.csv
 main.py
+*.zip
+*.ZIP
