@@ -210,7 +210,9 @@ class Facebook:
 
     def fetch_facebook_community_feed(
             self,
-            id
+            graph,
+            id,
+            limit=20
     ):
         '''
         Fetches feeds based on community id
