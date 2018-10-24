@@ -1,4 +1,4 @@
-#!/usr/bin/python
+# !/usr/bin/python
 import httplib2
 import os
 import sys
@@ -13,17 +13,21 @@ from googleapiclient.discovery import build
 from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge, BaseGraph as Graph
 
 
-def get_comments(youtube, video_id, channel_id):
-    results = youtube.commentThreads().list(
-        part="snippet,replies",
-        videoId=video_id,
-        channelId=channel_id,
-        textFormat="plainText"
-    ).execute()
-    return results["items"]
-
-
 class ChannelNode(Node):
+    """
+    This class is the channel node class which inherits from the BaseNode class
+    The channel node has following attribute:
+        Id
+        Title (Label for Gephi)
+        Description
+        View Count
+        Comment Count
+        Hidden Subscriber Count (Bool)
+        Video Count
+        Subscriber Count
+        Custom Url
+    """
+
     def __init__(self, channel):
         if 'channelId' not in channel['id']:
             channel_id = channel['id']
@@ -47,6 +51,15 @@ class ChannelNode(Node):
 
 
 class VideoNode(Node):
+    """
+    This class is the video node class which inherits from the BaseNode class
+    The video node has following attribute:
+        Id
+        Title (Label for Gephi)
+        Description
+        Published At
+    """
+
     def __init__(self, video):
         if 'videoId' not in video['id']:
             video_id = video['id']
@@ -59,6 +72,15 @@ class VideoNode(Node):
 
 
 class PlaylistNode(Node):
+    """
+    This class is the playlist node class which inherits from the BaseNode class
+    The playlist node has following attribute:
+        Id
+        Title (Label for Gephi)
+        Description
+        Published At
+    """
+
     def __init__(self, playlist):
         if 'playlistId' not in playlist['id']:
             playlist_id = playlist['id']
@@ -72,6 +94,18 @@ class PlaylistNode(Node):
 
 
 class CommentNode(Node):
+    """
+    This class is the comment node class which inherits from the BaseNode class
+    The comment node has following attribute:
+        Id
+        Text Display (Label for Gephi)
+        Updated At
+        Viewer Rating
+        canRate (Bool)
+        Text Original
+        likeCount
+    """
+
     def __init__(self, comment):
         Node.__init__(self, comment['id'],
                       comment['snippet']['textDisplay'], "comment")
@@ -86,6 +120,18 @@ class CommentNode(Node):
 
 
 class Youtube:
+    """
+    This is the youtube class
+    It has several fetch functionality:
+        fetch_videos_by_topic
+        fetch_channels_by_topic
+        fetch_playlists_by_topic
+        fetch_video_by_id_with_comments
+        fetch_channel_by_id
+        fetch_playlists_by_channel_id
+        fetch_playlistItems_by_playlist_id
+    """
+
     def __init__(self, api, option="pandas"):
         self.YOUTUBE_READ_WRITE_SSL_SCOPE = "https://www.googleapis.com/auth/youtube.force-ssl"
         self.YOUTUBE_API_SERVICE_NAME = 'youtube'
@@ -113,8 +159,10 @@ class Youtube:
                              developerKey=self.DEVELOPER_KEY)
         self.get_authenticated_service()
 
-    # Authorize the request and store authorization credentials.
     def get_authenticated_service(self):
+        """
+        This method Authorize the request and store authorization credentials.
+        """
         flow = flow_from_clientsecrets(self.CLIENT_SECRET_FILE, scope=self.YOUTUBE_READ_WRITE_SSL_SCOPE,
                                        message=self.MISSING_CLIENT_SECRET_MESSAGE)
 
@@ -131,6 +179,11 @@ class Youtube:
             return build_from_document(doc, http=credentials.authorize(httplib2.Http()))
 
     def create_node_by_channel_id(self, channel_id):
+        """
+        This method takes a channel id then return the ChannelNode object
+        :param channel_id: String of channel id
+        :return: the Channel Node object
+        """
         response = self.youtube.channels().list(
             id=channel_id,
             part='snippet,contentDetails,statistics'
@@ -139,22 +192,46 @@ class Youtube:
         channel_node = ChannelNode(response['items'][0])
         return channel_node
 
-    def fetch_channel_by_id(self, channel_id):
-        graph = Graph(option=self.option)
+    def create_node_by_video_id(self, video_id):
+        """
+        This method takes a video id then return the VideoNode object
+        :param video_id: String of video id
+        :return: the VideoNode object
+        """
+        response = self.youtube.videos().list(
+            id=video_id,
+            part='snippet,contentDetails,statistics'
+        )
+        video_node = VideoNode(response['items'][0])
+        return video_node
+
+    def fetch_channel_by_id(self, graph, channel_id):
+        """
+        This method grabs a channel Id and a graph and add the corresponding channelNode to it
+        :param graph: The graph we are passing in
+        :param channel_id: The id of channel
+        :return: The resulting graph (which adds one ChannelNode)
+        """
         graph.create_node(self.create_node_by_channel_id(channel_id))
         graph.generate_df("node")
         graph.generate_df("edge")
         return graph
 
-    def fetch_videos_by_topic(self, topic, maxResult=25):
+    def fetch_videos_by_topic(self, graph, topic, maxResult=25):
+        """
+        This method grabs videos about a certain topic and their corresponding creator (channel)
+        and add to the graph
+        :param graph: The graph we are passing in
+        :param topic: The keyword for query
+        :param maxResult: Max result for query, default 25
+        :return: The resulting graph
+        """
         search_response = self.youtube.search().list(
             q=topic,
             type='video',
             part='id,snippet',
             maxResults=maxResult
         ).execute()
-
-        graph = Graph(option=self.option)
 
         for search_result in search_response.get('items', []):
             if search_result['id']['kind'] == 'youtube#video':
@@ -168,9 +245,15 @@ class Youtube:
         graph.generate_df("edge")
         return graph
 
-    # Fetches video with its comments
-    def fetch_video_by_id_with_comments(self, video_id):
-        graph = Graph(option=self.option)
+    def fetch_video_by_id_with_comments(self, graph, video_id):
+        """
+        This method fetches a video with its comments and its creator (channel node)
+        and also all the creator (channel node) for the comments
+        And then add to the graph
+        :param graph: The graph we are passing in
+        :param video_id: The id of the video
+        :return: The resulting graph
+        """
         response = self.youtube.videos().list(
             part='snippet,contentDetails,statistics',
             id=video_id
@@ -185,7 +268,14 @@ class Youtube:
         graph.create_edge(Edge(channel_id, video_id, "createVideo"))
 
         # fetch its comments
-        comment_threads = get_comments(self.youtube, video_id, None)
+        comments_results = self.youtube.commentThreads().list(
+            part="snippet,replies",
+            videoId=video_id,
+            channelId=channel_id,
+            textFormat="plainText"
+        ).execute()
+
+        comment_threads = comments_results["items"]
 
         for comment_thread in comment_threads:
             top_level_comment = comment_thread['snippet']['topLevelComment']
@@ -220,15 +310,21 @@ class Youtube:
         graph.generate_df("edge")
         return graph
 
-    def fetch_channels_by_topic(self, topic, maxResult=25):
+    def fetch_channels_by_topic(self, graph, topic, maxResult=25):
+        """
+        This method fetches channels with a given topic
+        returning a disconnected graph
+        :param graph: The graph we are passing in
+        :param topic: The query topic
+        :param maxResult: The max result number, default 25
+        :return: The resulting graph
+        """
         search_response = self.youtube.search().list(
             q=topic,
             type='channel',
             part='id,snippet',
             maxResults=maxResult
         ).execute()
-
-        graph = Graph(option=self.option)
 
         for search_result in search_response.get('items', []):
             if search_result['id']['kind'] == 'youtube#channel':
@@ -239,15 +335,20 @@ class Youtube:
         graph.generate_df("edge")
         return graph
 
-    def fetch_playlists_by_topic(self, topic, maxResult=25):
+    def fetch_playlists_by_topic(self, graph, topic, maxResult=25):
+        """
+        This method fetches playlists with a given topic and all their creators
+        :param graph: The graph we are passing in
+        :param topic: The query topic
+        :param maxResult: The max result number, default 25
+        :return: The resulting graph
+        """
         search_response = self.youtube.search().list(
             q=topic,
             type='playlist',
             part='id,snippet',
             maxResults=maxResult
         ).execute()
-
-        graph = Graph(option=self.option)
 
         for search_result in search_response.get('items', []):
             if search_result['id']['kind'] == 'youtube#playlist':
@@ -258,6 +359,49 @@ class Youtube:
                 graph.create_node(self.create_node_by_channel_id(channel_id))
                 graph.create_edge(
                     Edge(channel_id, playlist_id, "createPlaylist"))
+
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
+
+    def fetch_playlists_by_channel_id(self, graph, channel_id):
+        """
+        This method fetches the playlists a channel has
+        :param graph: The graph we are passing in
+        :param channel_id: The channel id
+        :return: The resulting graph
+        """
+        graph.create_node(self.create_node_by_channel_id(channel_id))
+        response = self.youtube.playlist().list(
+            part='snippet',
+            channelId=channel_id,
+            maxResults=25
+        )
+
+        for item in response.get('items', []):
+            playlist_id = item['id']
+            graph.create_node(PlaylistNode(item))
+            graph.create_edge(channel_id, playlist_id, "createPlaylist")
+
+        graph.generate_df("node")
+        graph.generate_df("edge")
+        return graph
+
+    def fetch_playlistItems_by_playlist_id(self, graph, playlist_id):
+        """
+        This method lists all the video (playlistItems) for a playlist
+        :param graph: The graph we are passing in
+        :param playlist_id: The playlist id
+        :return: The resulting graph
+        """
+        response = self.youtube.playlistItems().list(
+            part='snippet',
+            maxResults=25,
+            playlistId=playlist_id
+        ).execute()
+
+        for item in response.get('items', []):
+            graph.create_node(VideoNode(item))
 
         graph.generate_df("node")
         graph.generate_df("edge")
