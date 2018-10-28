@@ -46,7 +46,7 @@ class PandasGraph(BaseGraph):
 
     def create_node(self, node):
         node_label = node.get_label_attribute()
-        # if there is no data frame for this label 
+        # if there is no data frame for this label
         if node_label not in self.nodes_df:
             # create a data frame and add to dict with label as the key
             self.nodes_df[node_label] = pd.DataFrame.from_dict([vars(node)])
@@ -58,7 +58,7 @@ class PandasGraph(BaseGraph):
 
     def create_edge(self, edge):
         edge_label = edge.get_label_attribute()
-        # if there is no data frame for this label 
+        # if there is no data frame for this label
         if edge_label not in self.edges_df:
             # create a data frame and add to dict with label as the key
             self.edges_df[edge_label] = pd.DataFrame.from_dict([vars(edge)])
@@ -69,7 +69,32 @@ class PandasGraph(BaseGraph):
                 pd.DataFrame.from_dict([vars(edge)]))
 
     def get_nodes(self):
+        """ returns all node dataframes """
         return self.nodes_df
 
     def get_edges(self):
+        """ returns all edge dataframes """
         return self.edges_df
+
+    def get_df(self, node_df, edge_df):
+        """ returns specified dataframes """
+        dataframes = {
+            "node": {},
+            "edge": {}
+        }
+        for node in node_df:
+            if node in self.nodes_df:
+                dataframes["node"][node] = self.nodes_df[node]
+        for edge in edge_df:
+            if edge in self.edges_df:
+                dataframes["edge"][edge] = self.edges_df[edge]
+        return dataframes
+
+    def get_df_single(self, name, _type="node"):
+        """ returns a single specified dataframe """
+        if _type == "node":
+            if name in self.nodes_df:
+                return self.nodes_df[name]
+        else:
+            if name in self.edges_df:
+                return self.edges_df[name]
