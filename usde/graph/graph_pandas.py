@@ -143,7 +143,7 @@ class PandasGraph(BaseGraph):
                 columns=vars(edge).keys())
 
         # append the node to the dictionary
-        self.edges[label][_id] = edge
+        self.edges_dict[label][_id] = edge
         self.edge_count += 1
 
         # if buffer is reached, move everything to the dataframe
