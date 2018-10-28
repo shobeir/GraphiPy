@@ -188,10 +188,11 @@ class Reddit:
             # Edges
             graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
             graph.create_edge(
-                Edge(submission["id"], redditor["id"], "CREATED_BY"))
-            graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
+                Edge(submission["id"], redditor["id"], "SUBMISSION_CREATED_BY"))
             graph.create_edge(
-                Edge(subreddit["id"], submission["id"], "HAS_POST"))
+                Edge(submission["id"], subreddit["id"], "ON"))
+            graph.create_edge(
+                Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
 
         return graph
 
@@ -238,10 +239,11 @@ class Reddit:
         # Edges
         graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
         graph.create_edge(
-            Edge(submission["id"], redditor["id"], "CREATED_BY"))
-        graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
+            Edge(submission["id"], redditor["id"], "SUBMISSION_CREATED_BY"))
         graph.create_edge(
-            Edge(subreddit["id"], submission["id"], "HAS_POST"))
+            Edge(submission["id"], subreddit["id"], "ON"))
+        graph.create_edge(
+            Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
 
         # iterate through comments
         comments = response[1]["data"]["children"]
@@ -259,14 +261,24 @@ class Reddit:
             graph.create_node(Comment(comment))
 
             # Edges
-            graph.create_edge(
-                Edge(redditor["id"], comment["id"], "COMMENTED"))
-            graph.create_edge(
-                Edge(comment["id"], redditor["id"], "CREATED_BY"))
-            graph.create_edge(
-                Edge(comment["id"], comment["parent_id"][3:], "ON"))
-            graph.create_edge(
-                Edge(comment["parent_id"][3:], comment["id"], "HAS_COMMENT"))
+            if comment["parent_id"][0:2] == "t3":  # parent is a submission
+                graph.create_edge(
+                    Edge(redditor["id"], comment["id"], "COMMENTED"))
+                graph.create_edge(
+                    Edge(comment["id"], redditor["id"], "COMMENT_CREATED_BY"))
+                graph.create_edge(
+                    Edge(comment["id"], comment["parent_id"][3:], "ON_POST"))
+                graph.create_edge(
+                    Edge(comment["parent_id"][3:], comment["id"], "HAS_COMMENT"))
+            else:
+                graph.create_edge(
+                    Edge(redditor["id"], comment["id"], "REPLIED"))
+                graph.create_edge(
+                    Edge(comment["id"], redditor["id"], "COMMENT_CREATED_BY"))
+                graph.create_edge(
+                    Edge(comment["id"], comment["parent_id"][3:], "TO"))
+                graph.create_edge(
+                    Edge(comment["parent_id"][3:], comment["id"], "HAS_REPLY"))
 
         return graph
 
@@ -312,9 +324,9 @@ class Reddit:
 
             # Edges
             graph.create_edge(
-                Edge(redditor["id"], comment["id"], "COMMENTED"))
+                Edge(redditor["id"], comment["id"], "REPLIED"))
             graph.create_edge(
-                Edge(comment["id"], redditor["id"], "CREATED_BY"))
+                Edge(comment["id"], redditor["id"], "COMMENT_CREATED_BY"))
 
         return graph
 
@@ -390,10 +402,10 @@ class Reddit:
             # Edges
             graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
             graph.create_edge(
-                Edge(submission["id"], redditor["id"], "CREATED_BY"))
+                Edge(submission["id"], redditor["id"], "SUBMISSION_CREATED_BY"))
             graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
             graph.create_edge(
-                Edge(subreddit["id"], submission["id"], "HAS_POST"))
+                Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
 
         return graph
 
