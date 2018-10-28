@@ -99,3 +99,6 @@ class NeoGraph(BaseGraph):
     def execute(self, query, param={}):
         """ Allows users to execute their own query """
         self.graph.run(query, parameters=param)
+
+    def delete_graph(self):
+        self.graph.run("MATCH (n) DETACH DELETE n")
