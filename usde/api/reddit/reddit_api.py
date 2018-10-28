@@ -1,17 +1,47 @@
-import praw
+import requests
+import requests.auth
+import pprint
+import json
 
 from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
 
+USER_API_URL = "https://oauth.reddit.com/user/"
+SUBREDDIT_API_URL = "https://oauth.reddit.com/r/"
+
+
 class Reddit:
-    """the Reddit object that is powered by PRAW"""
+    """the Reddit object"""
 
     def __init__(self, api):
-        self.reddit = praw.Reddit(
-            client_id=api["client_id"],
-            client_secret=api["client_secret"],
-            user_agent=api["user_agent"]
-        )
+        self.client_id = api["client_id"]
+        self.client_secret = api["client_secret"]
+        self.user_agent = api["user_agent"]
+
+        client_auth = requests.auth.HTTPBasicAuth(
+            self.client_id, self.client_secret)
+        post_data = {
+            "grant_type": "password",
+            "username": api["username"],
+            "password": api["password"]
+        }
+        headers = {"User-Agent": self.user_agent}
+        response = requests.post("https://www.reddit.com/api/v1/access_token",
+                                 auth=client_auth, data=post_data, headers=headers)
+        response = response.json()
+        self.headers = {
+            "Authorization": "bearer " + response["access_token"],
+            "User-Agent": self.user_agent
+        }
+
+    def get_request(self, url, params):
+        return requests.get(url, params=params, headers=self.headers)
+
+    def request_info(self, url, name):
+        url = url + name + "/about"
+        params = {}
+        response = self.get_request(url, params)
+        return response.json()["data"]
 
     def fetch_subreddits_by_name(
         self,
@@ -31,16 +61,17 @@ class Reddit:
         """
 
         # searches subreddit by keyword
-        subreddits = self.reddit.subreddits.search_by_name(
-            keyword, include_nsfw=nsfw, exact=exact)
+        url = "https://oauth.reddit.com/api/search_reddit_names"
+        params = {'query': keyword, 'exact': exact, 'include_over_18': nsfw}
+        response = self.get_request(url, params)
 
         # create new node for every subreddit found
-        i = 0
-        for subreddit in subreddits:
-            if i == limit:
-                break
-            i += 1
+        names = response.json()["names"]
+        for subreddit_name in names:
+            subreddit = self.request_info(SUBREDDIT_API_URL, subreddit_name)
             graph.create_node(Subreddit(subreddit))
+
+        return graph
 
     def fetch_subreddits_by_topic(
         self,
@@ -58,12 +89,10 @@ class Reddit:
         """
 
         # searches subreddit by related topic
-        subreddits = self.reddit.subreddits.search(
-            keyword, limit=limit)
 
         # create new node for every subreddit found
-        for subreddit in subreddits:
-            graph.create_node(Subreddit(subreddit))
+
+        pass
 
     def fetch_subreddit_submissions(
         self,
@@ -71,7 +100,7 @@ class Reddit:
         keyword="",
         subreddit_name="all",
         limit=20,
-        sort="top",
+        sort="hot",
         time_filter="month"
     ):
         """
@@ -85,49 +114,57 @@ class Reddit:
             - submission
         """
 
-        # get subreddit object
-        subreddit = self.reddit.subreddit(subreddit_name)
+        # request data
+        url = SUBREDDIT_API_URL + subreddit_name
+        params = {"limit": limit}
+        if sort != "hot":
+            params["sort"] = sort
+            params["t"] = time_filter
+        response = self.get_request(url, params)
 
-        # gets submissions on a subreddit sorted by parameter
-        if keyword == "":
-            if sort == "hot":
-                submissions = subreddit.hot(
-                    limit=limit, time_filter=time_filter)
-            elif sort == "new":
-                submissions = subreddit.new(
-                    limit=limit, time_filter=time_filter)
-            elif sort == "controversial":
-                submissions = subreddit.controversial(
-                    limit=limit, time_filter=time_filter)
-            elif sort == "rising":
-                submissions = subreddit.rising(
-                    limit=limit, time_filter=time_filter)
-            else:
-                submissions = subreddit.top(
-                    limit=limit, time_filter=time_filter)
+        data = response.json()["data"]
+        after = data["after"]
+        total = int(data["dist"])
+        submissions = data["children"]  # append next request to this list
 
-        # gets submissions on a subreddit by keyword
-        else:
-            submissions = subreddit.search(
-                keyword, sort=sort, time_filter=time_filter, limit=limit)
+        # request more submissions if limit is not reached
+        while total < limit:
+            url = SUBREDDIT_API_URL + subreddit_name + "?after=" + after
+            params = {"limit": limit}
+            if sort != "hot":
+                params["sort"] = sort
+                params["t"] = time_filter
+            response = self.get_request(url, params)
+
+            data = response.json()["data"]
+            after = data["after"]
+            dist = int(data["dist"])
+            if dist == 0:
+                break
+            total += dist
+            submissions.append(data["children"])
 
         # Subreddit Node
+        subreddit = self.request_info(SUBREDDIT_API_URL, subreddit_name)
         graph.create_node(Subreddit(subreddit))
 
         for submission in submissions:
+            submission = submission["data"]
+
             # Redditor Node
-            graph.create_node(Redditor(submission.author))
+            redditor = self.request_info(USER_API_URL, submission["author"])
+            graph.create_node(Redditor(redditor))
 
             # Submission Node
             graph.create_node(Submission(submission))
+
+            # Edges
+            graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
             graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id, "POSTED"))
+                Edge(submission["id"], redditor["id"], "CREATED_BY"))
+            graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
             graph.create_edge(
-                Edge(submission.id, submission.author.fullname[3:], "CREATED_BY"))
-            graph.create_edge(
-                Edge(submission.id, submission.subreddit.id, "ON"))
-            graph.create_edge(
-                Edge(submission.subreddit.id, submission.id, "HAS"))
+                Edge(subreddit["id"], submission["id"], "HAS_POST"))
 
     def fetch_submission_comments(
         self,
@@ -149,65 +186,59 @@ class Reddit:
             - submission
             - comment
         """
+        url = "https://oauth.reddit.com/comments/" + submission_id + "/"
+        params = {
+            "sort": sort,
+            "limit": limit
+        }
+        response = self.get_request(url, params)
+        data = response.json()
 
-        submission = self.reddit.submission(id=submission_id)
-
-        submission.comment_sort = sort
-
-        # maximum replacement is 32 (limitation of API)
-        if limit is None or limit > 32:
-            submission.comments.replace_more(limit=None)
-        else:
-            submission.comments.replace_more(limit=limit//10)
-
-        # gets top level comment or not based on parameter
-        if top_level is True:
-            comments = submission.comments
-        else:
-            comments = submission.comments.list()
-
-        # Redditor Node (Author)
-        graph.create_node(Redditor(submission.author))
-
-        # Subreddit Node
-        graph.create_node(Subreddit(submission.subreddit))
-
-        # Submission Node Edge
+        # Submission Node
+        submission = data[0]["data"]["children"][0]["data"]
         graph.create_node(Submission(submission))
 
-        graph.create_edge(
-            Edge(submission.author.fullname[3:], submission.id, "POSTED"))
-        graph.create_edge(
-            Edge(submission.id, submission.author.fullname[3:], "CREATED_BY"))
-        graph.create_edge(
-            Edge(submission.id, submission.subreddit.id, "ON"))
-        graph.create_edge(
-            Edge(submission.subreddit.id, submission.id, "HAS_POST"))
+        # Subreddit Node
+        subreddit = self.request_info(
+            SUBREDDIT_API_URL, submission["subreddit"])
+        graph.create_node(Subreddit(subreddit))
 
-        i = 0
+        # Redditor Node
+        redditor = self.request_info(USER_API_URL, submission["author"])
+        graph.create_node(Redditor(redditor))
+
+        # Edges
+        graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
+        graph.create_edge(
+            Edge(submission["id"], redditor["id"], "CREATED_BY"))
+        graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
+        graph.create_edge(
+            Edge(subreddit["id"], submission["id"], "HAS_POST"))
+
+        # iterate through comments
+        comments = data[1]["data"]["children"]
         for comment in comments:
-
-            # if reached number of comments desired
-            if i == limit:
-                break
-            i += 1
-
-            # skips deleted comment
-            if comment.author is None:
+            if comment["kind"] == "more":
                 continue
-            # Redditor Node
-            graph.create_node(Redditor(comment.author))
 
-            # Comment Node Edge
+            comment = comment["data"]
+
+            # Redditor Node
+            redditor = self.request_info(USER_API_URL, comment["author"])
+            graph.create_node(Redditor(redditor))
+
+            # Comment Node
             graph.create_node(Comment(comment))
+
+            # Edges
             graph.create_edge(
-                Edge(comment.author.fullname[3:], comment.id, "COMMENTED"))
+                Edge(redditor["id"], comment["id"], "COMMENTED"))
             graph.create_edge(
-                Edge(comment.id, comment.author.fullname[3:], "CREATED_BY"))
+                Edge(comment["id"], redditor["id"], "CREATED_BY"))
             graph.create_edge(
-                Edge(comment.id, comment.parent_id[3:], "ON"))
+                Edge(comment["id"], comment["parent_id"][3:], "ON"))
             graph.create_edge(
-                Edge(comment.parent_id[3:], comment.id, "HAS_COMMENT"))
+                Edge(comment["parent_id"][3:], comment["id"], "HAS_COMMENT"))
 
     def fetch_redditor_comments(
         self,
@@ -226,43 +257,35 @@ class Reddit:
         edges:
             - comment
         """
-        redditor = self.reddit.redditor(username)
 
-        # set sort parameter
-        if sort == "top":
-            comments = redditor.comments.top(
-                limit=limit, time_filter=time_filter)
-        elif sort == "hot":
-            comments = redditor.comments.hot(
-                limit=limit)
-        elif sort == "controversial":
-            comments = redditor.comments.controversial(
-                limit=limit, time_filter=time_filter)
-        else:
-            comments = redditor.comments.new(
-                limit=limit)
+        url = "https://oauth.reddit.com/user/" + username + "/comments"
+        params = {
+            "sort": sort,
+            "limit": limit,
+            "t": time_filter
+        }
+        response = self.get_request(url, params)
+        data = response.json()
 
         # Redditor Node
+        redditor = self.request_info(USER_API_URL, username)
         graph.create_node(Redditor(redditor))
 
-        i = 0
+        comments = data["data"]["children"]
         for comment in comments:
-
-            # if reached number of comments desired
-            if i == limit:
-                break
-            i += 1
-
-            # skips deleted comment
-            if comment.author is None:
+            if comment["kind"] == "more":
                 continue
 
-            # Comment Node Edge
+            comment = comment["data"]
+
+            # Comment Node
             graph.create_node(Comment(comment))
+
+            # Edges
             graph.create_edge(
-                Edge(comment.author.fullname[3:], comment.id, "COMMENTED"))
+                Edge(redditor["id"], comment["id"], "COMMENTED"))
             graph.create_edge(
-                Edge(comment.id, comment.author.fullname[3:], "CREATED_BY"))
+                Edge(comment["id"], redditor["id"], "CREATED_BY"))
 
     def fetch_redditor_submissions(
         self,
@@ -283,40 +306,61 @@ class Reddit:
             - submission
         """
 
-        redditor = self.reddit.redditor(username)
+        url = USER_API_URL + username + "/submitted"
+        params = {
+            "sort": sort,
+            "limit": limit,
+            "t": time_filter
+        }
+        response = self.get_request(url, params)
+        data = response.json()["data"]
+        after = data["after"]
+        total = int(data["dist"])
+        submissions = data["children"]  # append next request to this list
 
-        # set sort parameter
-        if sort == "top":
-            submissions = redditor.submissions.top(
-                limit=limit, time_filter=time_filter)
-        elif sort == "hot":
-            submissions = redditor.submissions.hot(
-                limit=limit)
-        elif sort == "controversial":
-            submissions = redditor.submissions.controversial(
-                limit=limit, time_filter=time_filter)
-        else:
-            submissions = redditor.submissions.new(
-                limit=limit)
+        # request more submissions if limit is not reached
+        while total < limit:
+            url = USER_API_URL + username + "?after=" + after
+            params = {"limit": limit}
+            if sort != "hot":
+                params["sort"] = sort
+                params["t"] = time_filter
+            response = self.get_request(url, params)
+
+            data = response.json()["data"]
+            after = data["after"]
+            dist = int(data["dist"])
+            if dist == 0:
+                break
+            total += dist
+            submissions.append(data["children"])
 
         # Redditor Node
+        redditor = self.request_info(USER_API_URL, username)
         graph.create_node(Redditor(redditor))
 
         for submission in submissions:
+            submission = submission["data"]
 
             # Subreddit Node
-            graph.create_node(Subreddit(submission.subreddit))
+            subreddit = self.request_info(
+                SUBREDDIT_API_URL, submission["subreddit"])
+            graph.create_node(Subreddit(subreddit))
 
-            # Submission Node Edge
+            # Redditor Node
+            redditor = self.request_info(USER_API_URL, submission["author"])
+            graph.create_node(Redditor(redditor))
+
+            # Submission Node
             graph.create_node(Submission(submission))
+
+            # Edges
+            graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
             graph.create_edge(
-                Edge(submission.author.fullname[3:], submission.id, "POSTED"))
+                Edge(submission["id"], redditor["id"], "CREATED_BY"))
+            graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
             graph.create_edge(
-                Edge(submission.id, submission.author.fullname[3:], "POSTED_BY"))
-            graph.create_edge(
-                Edge(submission.id, submission.subreddit.id, "ON"))
-            graph.create_edge(
-                Edge(submission.subreddit.id, submission.id, "HAS"))
+                Edge(subreddit["id"], submission["id"], "HAS_POST"))
 
 
 class Redditor(Node):
@@ -326,13 +370,11 @@ class Redditor(Node):
         self,
         redditor
     ):
-        Node.__init__(
-            self, redditor.fullname[3:], "u/" + redditor.name, "redditor")
-        self.username = redditor.name
-        self.created = redditor.created
-        self.link_karma = redditor.link_karma
-        self.comment_karma = redditor.comment_karma
-        self.upvotes = redditor.link_karma + redditor.comment_karma
+        Node.__init__(self, redditor["id"], "redditor", "redditor")
+        for key in redditor:
+            if key == "id":
+                continue
+            setattr(self, key, str(redditor[key]))
 
 
 class Submission(Node):
@@ -342,41 +384,11 @@ class Submission(Node):
         self,
         submission
     ):
-        media_url = None
-        if submission.media:
-            if "reddit_video" in submission.media:
-                media_url = submission.media["reddit_video"]["dash_url"]
-            elif "oembed" in submission.media:
-                html = submission.media["oembed"]["html"]
-                start = html.find("src=\"")
-                end = html.find("\"", start + 5)
-                media_url = html[start+5:end]
-
-        image_url = None
-        try:
-            if submission.preview:
-                if "images" in submission.preview:
-                    if "source" in submission.preview["images"]:
-                        image_url = submission.preview["images"]["source"]["url"]
-        except AttributeError:
-            pass
-
-        Node.__init__(self, submission.id, "submission_" +
-                      submission.id, "submission")
-        self.author_id = submission.author_fullname[3:]
-        self.subreddit_id = submission.subreddit_id[3:]
-        self.created = submission.created
-        self.title = submission.title
-        self.url = submission.url
-        self.permalink = "https://reddit.com" + submission.permalink
-        self.upvote_ratio = submission.upvote_ratio
-        self.upvotes = submission.score
-        self.selftext = submission.selftext
-        self.over_18 = submission.over_18
-        self.media_url = media_url
-        self.image_url = image_url
-        self.author_name = submission.author.name
-        self.subreddit_name = submission.subreddit.display_name
+        Node.__init__(self, submission["id"], "submission", "submission")
+        for key in submission:
+            if key == "id":
+                continue
+            setattr(self, key, str(submission[key]))
 
 
 class Subreddit(Node):
@@ -386,17 +398,12 @@ class Subreddit(Node):
         self,
         subreddit
     ):
-        Node.__init__(self, subreddit.id,
+        Node.__init__(self, subreddit["id"],
                       "subreddit", "subreddit")
-        self.display_name = subreddit.display_name
-        self.created = subreddit.created
-        self.description = subreddit.description
-        self.header_title = subreddit.header_title
-        self.subreddit_type = subreddit.subreddit_type
-        self.over18 = subreddit.over18
-        self.subscribers = subreddit.subscribers
-        self.title = subreddit.title
-        self.url = "https://reddit.com"+subreddit.url
+        for key in subreddit:
+            if key == "id":
+                continue
+            setattr(self, key, str(subreddit[key]))
 
 
 class Comment(Node):
@@ -406,11 +413,8 @@ class Comment(Node):
         self,
         comment
     ):
-        Node.__init__(self, comment.id, "comment_" + comment.id, "comment")
-        self.parent_id = comment.parent_id[3:]
-        self.author_id = comment.author_fullname[3:]
-        self.submisison_id = comment.link_id[3:]
-        self.subreddit_id = comment.subreddit_id[3:]
-        self.text = comment.body
-        self.permalink = "https://reddit.com" + comment.permalink
-        self.upvotes = comment.score
+        Node.__init__(self, comment["id"], "comment", "comment")
+        for key in comment:
+            if key == "id" or key == "replies":
+                continue
+            setattr(self, key, str(comment[key]))
