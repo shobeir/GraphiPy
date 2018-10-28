@@ -1,5 +1,5 @@
-import requests
 import json
+import httplib2
 
 from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
@@ -12,32 +12,36 @@ class Pinterest:
     def get_single_user(self, username):
         url = "https://api.pinterest.com/v1/users/" + username + "/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cimage%2Caccount_type%2Cbio%2Ccounts%2Ccreated_at"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         return result
 
     # get a single board info in JSON format by board_url
     def get_single_board(self, board_url):
         url = "https://api.pinterest.com/v1/boards/" + board_url + "/?access_token=" + self.access_token + \
             "&fields=id%2Cname%2Curl%2Ccounts%2Ccreated_at%2Ccreator%2Cdescription%2Cimage%2Cprivacy"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         return result
 
     # get a single pin info in JSON format by pin_id
     def get_single_pin(self, pin_id):
         url = "https://api.pinterest.com/v1/pins/" + pin_id + "/?access_token=" + self.access_token + \
             "&fields=note%2Curl%2Cboard%2Ccolor%2Ccounts%2Ccreated_at%2Ccreator%2Cimage%2Cid"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         return result
 
     # get all pins on one board in JSON format by board_url
     def get_pins_from_board(self, board_url):
         url = "https://api.pinterest.com/v1/boards/" + board_url + \
             "/pins/?access_token=" + self.access_token + "&fields=id"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         return result
 
     # get the graph for a single user by username
@@ -101,8 +105,9 @@ class Pinterest:
     def fetch_pinterest_my_usernode(self, graph):
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
 
         user = PinterestUser(result["data"])
         graph.create_node(user)
@@ -114,15 +119,17 @@ class Pinterest:
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         user = PinterestUser(result["data"])
         graph.create_node(user)
 
         url = "https://api.pinterest.com/v1/me/boards/?access_token=" + self.access_token + \
             "&fields=id%2Cname%2Curl%2Ccounts%2Ccreated_at%2Ccreator%2Cdescription%2Cimage%2Cprivacy"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
 
         for myboard in result["data"]:
             board = PinterestBoard(myboard)
@@ -137,15 +144,17 @@ class Pinterest:
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         user = PinterestUser(result["data"])
         graph.create_node(user)
 
         url = "https://api.pinterest.com/v1/me/pins/?access_token=" + self.access_token + \
             "&fields=note%2Curl%2Cboard%2Ccolor%2Ccounts%2Ccreated_at%2Ccreator%2Cimage%2Cid"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
 
         for mypin in result["data"]:
             pin = PinterestPin(mypin)
@@ -160,15 +169,17 @@ class Pinterest:
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         user = PinterestUser(result["data"])
         graph.create_node(user)
 
         url = "https://api.pinterest.com/v1/me/followers/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
 
         for myfollower in result["data"]:
             follower = PinterestUser(myfollower)
@@ -182,15 +193,17 @@ class Pinterest:
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         user = PinterestUser(result["data"])
         graph.create_node(user)
 
         url = "https://api.pinterest.com/v1/me/following/users/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
 
         for myfollowing in result["data"]:
             following = PinterestUser(myfollowing)
@@ -204,15 +217,17 @@ class Pinterest:
 
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
         user = PinterestUser(result["data"])
         graph.create_node(user)
 
         url = "https://api.pinterest.com/v1/me/following/boards/?access_token=" + self.access_token + \
             "&fields=id%2Cname%2Curl%2Ccounts%2Ccreated_at%2Ccreator%2Cdescription%2Cimage%2Cprivacy"
-        response = requests.request("GET", url)
-        result = json.loads(response.text)
+        http = httplib2.Http()
+        response, content = http.request(url, method="GET")
+        result = json.loads(content.decode())
 
         for myfollowingboard in result["data"]:
             followingboard = PinterestBoard(myfollowingboard)

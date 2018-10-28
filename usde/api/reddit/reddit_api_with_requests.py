@@ -1,8 +1,8 @@
-
-import json
-import httplib2
+import requests
+import requests.auth
 
 from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
+
 
 USER_API_URL = "https://oauth.reddit.com/user/"
 SUBREDDIT_API_URL = "https://oauth.reddit.com/r/"
@@ -16,44 +16,30 @@ class Reddit:
         self.client_secret = api["client_secret"]
         self.user_agent = api["user_agent"]
 
-        self.h = httplib2.Http(".cache")
-        self.h.add_credentials(self.client_id, self.client_secret)
-        resp, content = self.h.request(
-            "https://www.reddit.com/api/v1/access_token/?grant_type=password&username=" +
-            api["username"]+"&password="+api["password"],
-            "POST"
-        )
-
-        content = json.loads(content.decode("utf-8"))
-
+        client_auth = requests.auth.HTTPBasicAuth(
+            self.client_id, self.client_secret)
+        post_data = {
+            "grant_type": "password",
+            "username": api["username"],
+            "password": api["password"]
+        }
+        headers = {"User-Agent": self.user_agent}
+        response = requests.post("https://www.reddit.com/api/v1/access_token",
+                                 auth=client_auth, data=post_data, headers=headers)
+        response = response.json()
         self.headers = {
-            "Authorization": "bearer " + content["access_token"],
+            "Authorization": "bearer " + response["access_token"],
             "User-Agent": self.user_agent
         }
 
+    def get_request(self, url, params):
+        return requests.get(url, params=params, headers=self.headers)
+
     def request_info(self, url, name):
         url = url + name + "/about"
-        response = self.get_request(url)
-        return response["data"]
-
-    def generate_url(self, url, params):
-        l = [url, "/?"]
-        i = False
-        for key in params:
-            if i is True:
-                l.append("&")
-            l.append(key)
-            l.append("=")
-            l.append(str(params[key]))
-            i = True
-        return ''.join(l)
-
-    def get_request(self, url, params=None):
-        if params is not None:
-            url = self.generate_url(url, params)
-        resp, content = self.h.request(url, "GET", headers=self.headers)
-        content = json.loads(content.decode("utf-8"))
-        return content
+        params = {}
+        response = self.get_request(url, params)
+        return response.json()["data"]
 
     def fetch_subreddits_by_name(
         self,
@@ -73,18 +59,14 @@ class Reddit:
         """
 
         # searches subreddit by keyword
-        params = {'query': keyword, 'exact': exact, 'include_over_18': nsfw}
         url = "https://oauth.reddit.com/api/search_reddit_names"
+        params = {'query': keyword, 'exact': exact, 'include_over_18': nsfw}
         response = self.get_request(url, params)
 
         # create new node for every subreddit found
-        names = response["names"]
+        names = response.json()["names"]
         for subreddit_name in names:
-            url = ''.join([SUBREDDIT_API_URL, subreddit_name, "/about"])
-            response = self.get_request(url)
-
-            # Subreddit node
-            subreddit = response["data"]
+            subreddit = self.request_info(SUBREDDIT_API_URL, subreddit_name)
             graph.create_node(Subreddit(subreddit))
 
         return graph
@@ -110,7 +92,7 @@ class Reddit:
         response = self.get_request(url, params)
 
         # create new node for every subreddit found
-        subreddits = response["data"]["children"]
+        subreddits = response.json()["data"]["children"]
         for subreddit in subreddits:
             subreddit = subreddit["data"]
             graph.create_node(Subreddit(subreddit))
@@ -140,14 +122,12 @@ class Reddit:
         # request data
         url = SUBREDDIT_API_URL + subreddit_name
         params = {"limit": limit}
-
         if sort != "hot":
             params["sort"] = sort
             params["t"] = time_filter
-
         response = self.get_request(url, params)
 
-        data = response["data"]
+        data = response.json()["data"]
         after = data["after"]
         total = int(data["dist"])
         submissions = data["children"]  # append next request to this list
@@ -156,14 +136,12 @@ class Reddit:
         while total < limit:
             url = SUBREDDIT_API_URL + subreddit_name + "?after=" + after
             params = {"limit": limit}
-
             if sort != "hot":
                 params["sort"] = sort
                 params["t"] = time_filter
-
             response = self.get_request(url, params)
 
-            data = response["data"]
+            data = response.json()["data"]
             after = data["after"]
             dist = int(data["dist"])
             if dist == 0:
@@ -188,11 +166,10 @@ class Reddit:
             # Edges
             graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
             graph.create_edge(
-                Edge(submission["id"], redditor["id"], "SUBMISSION_CREATED_BY"))
+                Edge(submission["id"], redditor["id"], "CREATED_BY"))
+            graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
             graph.create_edge(
-                Edge(submission["id"], subreddit["id"], "ON"))
-            graph.create_edge(
-                Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
+                Edge(subreddit["id"], submission["id"], "HAS_POST"))
 
         return graph
 
@@ -222,9 +199,10 @@ class Reddit:
             "limit": limit
         }
         response = self.get_request(url, params)
+        data = response.json()
 
         # Submission Node
-        submission = response[0]["data"]["children"][0]["data"]
+        submission = data[0]["data"]["children"][0]["data"]
         graph.create_node(Submission(submission))
 
         # Subreddit Node
@@ -239,14 +217,13 @@ class Reddit:
         # Edges
         graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
         graph.create_edge(
-            Edge(submission["id"], redditor["id"], "SUBMISSION_CREATED_BY"))
+            Edge(submission["id"], redditor["id"], "CREATED_BY"))
+        graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
         graph.create_edge(
-            Edge(submission["id"], subreddit["id"], "ON"))
-        graph.create_edge(
-            Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
+            Edge(subreddit["id"], submission["id"], "HAS_POST"))
 
         # iterate through comments
-        comments = response[1]["data"]["children"]
+        comments = data[1]["data"]["children"]
         for comment in comments:
             if comment["kind"] == "more":
                 continue
@@ -261,24 +238,14 @@ class Reddit:
             graph.create_node(Comment(comment))
 
             # Edges
-            if comment["parent_id"][0:2] == "t3":  # parent is a submission
-                graph.create_edge(
-                    Edge(redditor["id"], comment["id"], "COMMENTED"))
-                graph.create_edge(
-                    Edge(comment["id"], redditor["id"], "COMMENT_CREATED_BY"))
-                graph.create_edge(
-                    Edge(comment["id"], comment["parent_id"][3:], "ON_POST"))
-                graph.create_edge(
-                    Edge(comment["parent_id"][3:], comment["id"], "HAS_COMMENT"))
-            else:
-                graph.create_edge(
-                    Edge(redditor["id"], comment["id"], "REPLIED"))
-                graph.create_edge(
-                    Edge(comment["id"], redditor["id"], "COMMENT_CREATED_BY"))
-                graph.create_edge(
-                    Edge(comment["id"], comment["parent_id"][3:], "TO"))
-                graph.create_edge(
-                    Edge(comment["parent_id"][3:], comment["id"], "HAS_REPLY"))
+            graph.create_edge(
+                Edge(redditor["id"], comment["id"], "COMMENTED"))
+            graph.create_edge(
+                Edge(comment["id"], redditor["id"], "CREATED_BY"))
+            graph.create_edge(
+                Edge(comment["id"], comment["parent_id"][3:], "ON"))
+            graph.create_edge(
+                Edge(comment["parent_id"][3:], comment["id"], "HAS_COMMENT"))
 
         return graph
 
@@ -307,12 +274,13 @@ class Reddit:
             "t": time_filter
         }
         response = self.get_request(url, params)
+        data = response.json()
 
         # Redditor Node
         redditor = self.request_info(USER_API_URL, username)
         graph.create_node(Redditor(redditor))
 
-        comments = response["data"]["children"]
+        comments = data["data"]["children"]
         for comment in comments:
             if comment["kind"] == "more":
                 continue
@@ -324,9 +292,9 @@ class Reddit:
 
             # Edges
             graph.create_edge(
-                Edge(redditor["id"], comment["id"], "REPLIED"))
+                Edge(redditor["id"], comment["id"], "COMMENTED"))
             graph.create_edge(
-                Edge(comment["id"], redditor["id"], "COMMENT_CREATED_BY"))
+                Edge(comment["id"], redditor["id"], "CREATED_BY"))
 
         return graph
 
@@ -356,7 +324,7 @@ class Reddit:
             "t": time_filter
         }
         response = self.get_request(url, params)
-        data = response["data"]
+        data = response.json()["data"]
         after = data["after"]
         total = int(data["dist"])
         submissions = data["children"]  # append next request to this list
@@ -365,16 +333,14 @@ class Reddit:
         while total < limit:
             url = USER_API_URL + username + "?after=" + after
             params = {"limit": limit}
-
             if sort != "hot":
                 params["sort"] = sort
                 params["t"] = time_filter
             response = self.get_request(url, params)
 
-            data = response["data"]
+            data = response.json()["data"]
             after = data["after"]
             dist = int(data["dist"])
-
             if dist == 0:
                 break
             total += dist
@@ -402,10 +368,10 @@ class Reddit:
             # Edges
             graph.create_edge(Edge(redditor["id"], submission["id"], "POSTED"))
             graph.create_edge(
-                Edge(submission["id"], redditor["id"], "SUBMISSION_CREATED_BY"))
+                Edge(submission["id"], redditor["id"], "CREATED_BY"))
             graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
             graph.create_edge(
-                Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
+                Edge(subreddit["id"], submission["id"], "HAS_POST"))
 
         return graph
 
