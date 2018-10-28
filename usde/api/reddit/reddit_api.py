@@ -1,8 +1,8 @@
-import requests
-import requests.auth
+
+import json
+import httplib2
 
 from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
-
 
 USER_API_URL = "https://oauth.reddit.com/user/"
 SUBREDDIT_API_URL = "https://oauth.reddit.com/r/"
@@ -16,30 +16,44 @@ class Reddit:
         self.client_secret = api["client_secret"]
         self.user_agent = api["user_agent"]
 
-        client_auth = requests.auth.HTTPBasicAuth(
-            self.client_id, self.client_secret)
-        post_data = {
-            "grant_type": "password",
-            "username": api["username"],
-            "password": api["password"]
-        }
-        headers = {"User-Agent": self.user_agent}
-        response = requests.post("https://www.reddit.com/api/v1/access_token",
-                                 auth=client_auth, data=post_data, headers=headers)
-        response = response.json()
+        self.h = httplib2.Http(".cache")
+        self.h.add_credentials(self.client_id, self.client_secret)
+        resp, content = self.h.request(
+            "https://www.reddit.com/api/v1/access_token/?grant_type=password&username=" +
+            api["username"]+"&password="+api["password"],
+            "POST"
+        )
+
+        content = json.loads(content.decode("utf-8"))
+
         self.headers = {
-            "Authorization": "bearer " + response["access_token"],
+            "Authorization": "bearer " + content["access_token"],
             "User-Agent": self.user_agent
         }
 
-    def get_request(self, url, params):
-        return requests.get(url, params=params, headers=self.headers)
-
     def request_info(self, url, name):
         url = url + name + "/about"
-        params = {}
-        response = self.get_request(url, params)
-        return response.json()["data"]
+        response = self.get_request(url)
+        return response["data"]
+
+    def generate_url(self, url, params):
+        l = [url, "/?"]
+        i = False
+        for key in params:
+            if i is True:
+                l.append("&")
+            l.append(key)
+            l.append("=")
+            l.append(str(params[key]))
+            i = True
+        return ''.join(l)
+
+    def get_request(self, url, params=None):
+        if params is not None:
+            url = self.generate_url(url, params)
+        resp, content = self.h.request(url, "GET", headers=self.headers)
+        content = json.loads(content.decode("utf-8"))
+        return content
 
     def fetch_subreddits_by_name(
         self,
@@ -59,14 +73,18 @@ class Reddit:
         """
 
         # searches subreddit by keyword
-        url = "https://oauth.reddit.com/api/search_reddit_names"
         params = {'query': keyword, 'exact': exact, 'include_over_18': nsfw}
+        url = "https://oauth.reddit.com/api/search_reddit_names"
         response = self.get_request(url, params)
 
         # create new node for every subreddit found
-        names = response.json()["names"]
+        names = response["names"]
         for subreddit_name in names:
-            subreddit = self.request_info(SUBREDDIT_API_URL, subreddit_name)
+            url = ''.join([SUBREDDIT_API_URL, subreddit_name, "/about"])
+            response = self.get_request(url)
+
+            # Subreddit node
+            subreddit = response["data"]
             graph.create_node(Subreddit(subreddit))
 
         return graph
@@ -92,7 +110,7 @@ class Reddit:
         response = self.get_request(url, params)
 
         # create new node for every subreddit found
-        subreddits = response.json()["data"]["children"]
+        subreddits = response["data"]["children"]
         for subreddit in subreddits:
             subreddit = subreddit["data"]
             graph.create_node(Subreddit(subreddit))
@@ -122,12 +140,14 @@ class Reddit:
         # request data
         url = SUBREDDIT_API_URL + subreddit_name
         params = {"limit": limit}
+
         if sort != "hot":
             params["sort"] = sort
             params["t"] = time_filter
+
         response = self.get_request(url, params)
 
-        data = response.json()["data"]
+        data = response["data"]
         after = data["after"]
         total = int(data["dist"])
         submissions = data["children"]  # append next request to this list
@@ -136,12 +156,14 @@ class Reddit:
         while total < limit:
             url = SUBREDDIT_API_URL + subreddit_name + "?after=" + after
             params = {"limit": limit}
+
             if sort != "hot":
                 params["sort"] = sort
                 params["t"] = time_filter
+
             response = self.get_request(url, params)
 
-            data = response.json()["data"]
+            data = response["data"]
             after = data["after"]
             dist = int(data["dist"])
             if dist == 0:
@@ -199,10 +221,9 @@ class Reddit:
             "limit": limit
         }
         response = self.get_request(url, params)
-        data = response.json()
 
         # Submission Node
-        submission = data[0]["data"]["children"][0]["data"]
+        submission = response[0]["data"]["children"][0]["data"]
         graph.create_node(Submission(submission))
 
         # Subreddit Node
@@ -223,7 +244,7 @@ class Reddit:
             Edge(subreddit["id"], submission["id"], "HAS_POST"))
 
         # iterate through comments
-        comments = data[1]["data"]["children"]
+        comments = response[1]["data"]["children"]
         for comment in comments:
             if comment["kind"] == "more":
                 continue
@@ -274,13 +295,12 @@ class Reddit:
             "t": time_filter
         }
         response = self.get_request(url, params)
-        data = response.json()
 
         # Redditor Node
         redditor = self.request_info(USER_API_URL, username)
         graph.create_node(Redditor(redditor))
 
-        comments = data["data"]["children"]
+        comments = response["data"]["children"]
         for comment in comments:
             if comment["kind"] == "more":
                 continue
@@ -324,7 +344,7 @@ class Reddit:
             "t": time_filter
         }
         response = self.get_request(url, params)
-        data = response.json()["data"]
+        data = response["data"]
         after = data["after"]
         total = int(data["dist"])
         submissions = data["children"]  # append next request to this list
@@ -333,14 +353,16 @@ class Reddit:
         while total < limit:
             url = USER_API_URL + username + "?after=" + after
             params = {"limit": limit}
+
             if sort != "hot":
                 params["sort"] = sort
                 params["t"] = time_filter
             response = self.get_request(url, params)
 
-            data = response.json()["data"]
+            data = response["data"]
             after = data["after"]
             dist = int(data["dist"])
+
             if dist == 0:
                 break
             total += dist
