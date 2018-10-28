@@ -1,6 +1,5 @@
 # !/usr/bin/python
 import httplib2
-import os
 import sys
 
 from apiclient.discovery import build_from_document
@@ -143,15 +142,9 @@ class Youtube:
         self.MISSING_CLIENT_SECRET_MESSAGE = """
         WARNING: Please configure OAuth 2.0
 
-        To make this sample run you will need to populate the client_secrets.json file
-        found at:
-           %s
+        To run you will need to populate the client_secrets.json file
         with information from the APIs Console
-        https://console.developers.google.com
-
-        For more information about the client_secrets.json file format, please visit:
-        https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
-        """ % os.path.abspath(os.path.join(os.path.dirname(__file__), self.CLIENT_SECRET_FILE))
+        https://console.developers.google.com"""
 
         self.option = option
 
