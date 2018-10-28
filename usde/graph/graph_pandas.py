@@ -24,23 +24,23 @@ class PandasGraph(BaseGraph):
         if _type == "node" or _type == "both":
             for key in self.nodes_df:
                 nodes_list = []
-                for _id in self.nodes[key]:
-                    nodes_list.append(vars(self.nodes[key][_id]))
+                for _id in self.nodes_dict[key]:
+                    nodes_list.append(vars(self.nodes_dict[key][_id]))
                 df = pd.DataFrame(nodes_list)
                 self.nodes_df[key] = self.nodes_df[key].append(
                     df, sort=False, ignore_index=True)
-                self.nodes[key] = {}
+                self.nodes_dict[key] = {}
             self.node_count = 0
 
         if _type == "edge" or _type == "both":
             for key in self.edges_df:
                 edges_list = []
-                for _id in self.edges[key]:
-                    edges_list.append(vars(self.edges[key][_id]))
+                for _id in self.edges_dict[key]:
+                    edges_list.append(vars(self.edges_dict[key][_id]))
                 df = pd.DataFrame(edges_list)
                 self.edges_df[key] = self.edges_df[key].append(
                     df, sort=False, ignore_index=True)
-                self.edges[key] = {}
+                self.edges_dict[key] = {}
             self.edge_count = 0
 
     def export_all_CSV(self, prefix):
