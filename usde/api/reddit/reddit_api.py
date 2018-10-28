@@ -1,7 +1,5 @@
 import requests
 import requests.auth
-import pprint
-import json
 
 from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
@@ -77,7 +75,7 @@ class Reddit:
         self,
         graph,
         keyword,
-        limit=20
+        limit=25
     ):
         """
         Fetches subreddits based on matching topic
@@ -89,10 +87,17 @@ class Reddit:
         """
 
         # searches subreddit by related topic
+        url = "https://oauth.reddit.com/subreddits/search"
+        params = {"q": keyword, "limit": limit}
+        response = self.get_request(url, params)
 
         # create new node for every subreddit found
+        subreddits = response.json()["data"]["children"]
+        for subreddit in subreddits:
+            subreddit = subreddit["data"]
+            graph.create_node(Subreddit(subreddit))
 
-        pass
+        return graph
 
     def fetch_subreddit_submissions(
         self,
@@ -165,6 +170,8 @@ class Reddit:
             graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
             graph.create_edge(
                 Edge(subreddit["id"], submission["id"], "HAS_POST"))
+
+        return graph
 
     def fetch_submission_comments(
         self,
@@ -240,6 +247,8 @@ class Reddit:
             graph.create_edge(
                 Edge(comment["parent_id"][3:], comment["id"], "HAS_COMMENT"))
 
+        return graph
+
     def fetch_redditor_comments(
         self,
         graph,
@@ -286,6 +295,8 @@ class Reddit:
                 Edge(redditor["id"], comment["id"], "COMMENTED"))
             graph.create_edge(
                 Edge(comment["id"], redditor["id"], "CREATED_BY"))
+
+        return graph
 
     def fetch_redditor_submissions(
         self,
@@ -361,6 +372,8 @@ class Reddit:
             graph.create_edge(Edge(submission["id"], subreddit["id"], "ON"))
             graph.create_edge(
                 Edge(subreddit["id"], submission["id"], "HAS_POST"))
+
+        return graph
 
 
 class Redditor(Node):
