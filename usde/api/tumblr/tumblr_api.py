@@ -14,6 +14,20 @@ class Tumblr:
             oauth_secret=api["oauth_secret"]
         )
 
+    def fetch_blog(
+        self,
+        graph,
+        blog_name
+    ):
+        """
+        Fetches information of a blog with the identifier "blog_name"
+
+        node:
+            - blog
+        """
+        blog = self.tumblr.blog_info(blog_name)['blog']
+        graph.create_node(Blog(blog))
+
     def fetch_blogs_following(
             self,
             graph,
@@ -188,7 +202,7 @@ class Post (Node):
         self,
         post
     ):
-        # print(post)
+        print(post)
         Node.__init__(self, post['id'], post['id'], "post")
         self.blog_name = post['blog_name'],
         self.post_url = post['post_url'],
