@@ -202,7 +202,7 @@ class Post (Node):
         self,
         post
     ):
-        print(post)
+        # print(post)
         Node.__init__(self, post['id'], post['id'], "post")
         self.blog_name = post['blog_name'],
         self.post_url = post['post_url'],
