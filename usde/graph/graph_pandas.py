@@ -166,8 +166,8 @@ class PandasGraph(BaseGraph):
 
         return self.edges_df
 
-    def get_df(self, node_df=set(), edge_df=set()):
-        """ returns specified dataframes """
+    def get_df_multiple(self, node_df=set(), edge_df=set()):
+        """ returns specified dataframes in a dictionary"""
 
         # append remaining nodes/edges to dataframe
         self.convert_to_df("both")
@@ -191,7 +191,7 @@ class PandasGraph(BaseGraph):
 
         return dataframes
 
-    def get_df_single(self, name, _type="node"):
+    def get_df(self, name, _type="node"):
         """ returns a single specified dataframe """
 
         # append remaining nodes/edges to dataframe
