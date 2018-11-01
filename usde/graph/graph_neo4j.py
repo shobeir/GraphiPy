@@ -67,6 +67,8 @@ class NeoGraph(BaseGraph):
         node_option = {
             "node_label": [attribute1, attribute2, attribute3, ...]
         }
+
+        if no attribute is specified, returns all the attributes
         """
 
         for key in node_option:
