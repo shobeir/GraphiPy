@@ -166,7 +166,7 @@ class PandasGraph(BaseGraph):
 
         return self.edges_df
 
-    def get_df(self, node_df, edge_df):
+    def get_df(self, node_df=set(), edge_df=set()):
         """ returns specified dataframes """
 
         # append remaining nodes/edges to dataframe
