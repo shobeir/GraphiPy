@@ -1,7 +1,7 @@
 import json
 import httplib2
-from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge, BaseGraph as Graph
-from usde.graph.graph_pandas import PandasGraph
+from graphipy.graph.graph_base import BaseNode as Node, BaseEdge as Edge, BaseGraph as Graph
+from graphipy.graph.graph_pandas import PandasGraph
 
 class LinkedinPosition(Node):
     def __init__(self, position):

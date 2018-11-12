@@ -1,7 +1,7 @@
 import json
 import httplib2
 
-from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
+from graphipy.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
 
 class Pinterest:

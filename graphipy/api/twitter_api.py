@@ -2,7 +2,7 @@ import httplib2
 import json
 import base64
 import urllib
-from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
+from graphipy.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
 class Twitter:
 	def __init__(self, api):
