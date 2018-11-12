@@ -59,7 +59,11 @@ class PandasGraph(BaseGraph):
 
         if not os.path.exists(export_path):
             os.mkdir(export_path)
+
+        if not os.path.exists(export_path_node):
             os.mkdir(export_path_node)
+
+        if not os.path.exists(export_path_edge):
             os.mkdir(export_path_edge)
 
         # append remaining nodes/edges to dataframe

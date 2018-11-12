@@ -1,4 +1,5 @@
 import csv
+import os
 from graphipy.graph.graph_base import BaseGraph
 
 
@@ -10,13 +11,31 @@ class DictGraph(BaseGraph):
         self.nodes = {}
         self.edges = {}
 
+        self.path = os.getcwd() + "\\csv"
+        if not os.path.exists(self.path):
+            os.mkdir(self.path)
+
     def export_all_CSV(self, prefix):
+
+        export_path = self.path + "\\" + prefix + "\\"
+        export_path_node = export_path + "nodes\\"
+        export_path_edge = export_path + "edges\\"
+
+        if not os.path.exists(export_path):
+            os.mkdir(export_path)
+
+        if not os.path.exists(export_path_node):
+            os.mkdir(export_path_node)
+
+        if not os.path.exists(export_path_edge):
+            os.mkdir(export_path_edge)
+
         nodes = self.get_nodes()
         edges = self.get_edges()
 
         for key in nodes:
             # create a csv file and write in data
-            with open(prefix + "_" + key + "_node_by_dict.csv", 'w', newline='') as f:
+            with open(export_path_node + key + ".csv", 'w', newline='') as f:
                 w = csv.writer(f)
                 has_first_row = False
                 for node_key in nodes[key]:
@@ -32,7 +51,7 @@ class DictGraph(BaseGraph):
 
         for key in edges:
             # create a csv file and write in data
-            with open(prefix + "_" + key + "_edge_by_dict.csv", 'w', newline='') as f:
+            with open(export_path_edge + key + ".csv", 'w', newline='') as f:
                 w = csv.writer(f)
                 has_first_row = False
                 for edge_key in edges[key]:
