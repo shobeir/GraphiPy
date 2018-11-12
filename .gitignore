@@ -6,3 +6,4 @@ main.py
 *.zip
 *.ZIP
 .cache
+.ipynb_checkpoints
