@@ -1,6 +1,6 @@
 import pytumblr
 
-from usde.graph.graph_base import BaseGraph as Graph, BaseNode as Node, BaseEdge as Edge
+from graphipy.graph.graph_base import BaseGraph as Graph, BaseNode as Node, BaseEdge as Edge
 
 
 class Tumblr:

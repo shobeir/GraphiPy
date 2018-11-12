@@ -2,7 +2,7 @@
 import json
 import httplib2
 
-from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
+from graphipy.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
 USER_API_URL = "https://oauth.reddit.com/user/"
 SUBREDDIT_API_URL = "https://oauth.reddit.com/r/"

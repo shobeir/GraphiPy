@@ -10,7 +10,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 from googleapiclient.discovery import build
 
-from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge, BaseGraph as Graph
+from graphipy.graph.graph_base import BaseNode as Node, BaseEdge as Edge, BaseGraph as Graph
 
 
 class ChannelNode(Node):

@@ -1,2 +1,2 @@
-# USDE
+# GraphiPy
 Universal Social Data Extractor
