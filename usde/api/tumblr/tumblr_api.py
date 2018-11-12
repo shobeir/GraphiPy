@@ -28,6 +28,8 @@ class Tumblr:
         blog = self.tumblr.blog_info(blog_name)['blog']
         graph.create_node(Blog(blog))
 
+        return graph
+
     def fetch_blogs_following(
             self,
             graph,
@@ -55,8 +57,11 @@ class Tumblr:
             for blog_following in blogs_following:
                 graph.create_node(Blog(blog_following))
                 graph.create_edge(Edge(blog['name'], blog_following['name'], "FOLLOWING"))
-        except KeyError:
+        except KeyError as error:
+            print(error)
             print(blogs_following_raw)
+
+        return graph
 
     def fetch_followers(
             self,
@@ -84,8 +89,11 @@ class Tumblr:
             for follower in followers:
                 graph.create_node(Blog(follower))
                 graph.create_edge(Edge(blog['name'], follower['name'], "FOLLOWER"))
-        except KeyError:
+        except KeyError as error:
+            print(error)
             print(followers_raw)
+
+        return graph
 
     def fetch_published_posts(
         self,
@@ -116,8 +124,11 @@ class Tumblr:
             for published_post in published_posts:
                 graph.create_node(Post(published_post))
                 graph.create_edge(Edge(blog['name'], str(published_post['id']), "PUBLISHED"))
-        except KeyError:
+        except KeyError as error:
+            print(error)
             print(published_posts_raw)
+
+        return graph
 
     def fetch_liked_posts(
         self,
@@ -149,8 +160,11 @@ class Tumblr:
             for liked_post in liked_posts:
                 graph.create_node(Post(liked_post))
                 graph.create_edge(Edge(blog['name'], str(liked_post['id']), "LIKED"))
-        except KeyError:
+        except KeyError as error:
+            print(error)
             print(liked_posts_raw)
+
+        return graph
 
     def fetch_posts_tagged(
         self,
@@ -161,7 +175,7 @@ class Tumblr:
         filter=""
     ):
         """
-            Fetches posts with a given tag and their publishers (blogs)
+            Fetches posts and their publishers (blogs) with a given tag
 
             nodes:
                 - blog
@@ -178,6 +192,8 @@ class Tumblr:
             graph.create_node(Blog(blog))
             graph.create_edge(Edge(blog['name'], str(post_tagged['id']), "PUBLISHED"))
 
+        return graph
+
 
 class Blog (Node):
     """Tumblr's users are identified as Blogs"""
@@ -187,12 +203,12 @@ class Blog (Node):
         blog
     ):
         Node.__init__(self, blog['name'], blog['title'], "blog")
-        self.name = blog['name'],
-        self.title = blog['title'],
+        self.name = blog['name']
+        self.title = blog['title']
+        self.description = blog['description']
         self.url = blog['url']
         self.uuid = blog['uuid']
-        self.updated = blog['updated'],
-        self.description = blog['description']
+        self.updated = blog['updated']
 
 
 class Post (Node):
@@ -204,13 +220,96 @@ class Post (Node):
     ):
         # print(post)
         Node.__init__(self, post['id'], post['id'], "post")
-        self.blog_name = post['blog_name'],
-        self.post_url = post['post_url'],
-        self.type = post['type'],
-        self.timestamp = post['timestamp'],  # The time of the post, in seconds since the epoch
-        self.date = post['date'],  # The GMT date and time of the post, as a string
-        self.format = post['format'],  # String The post format: html or markdown
-        self.tags = post['tags'],  # Array(string) Tags applied to the post
-        self.state = post['state']
+
+        self.type = post['type']  # Any one from text, photo, quote, link, chat, video, answer
+        self.blog_name = post['blog_name']
+        self.post_url = post['post_url']
+        self.slug = post['slug']  # Short text summary to the end of the post URL
+        self.date = post['date']  # The GMT date and time of the post, as a string
+        self.timestamp = post['timestamp']  # The time of the post, in seconds since the epoch
+        self.state = post['state']   # Indicates the current state of the post
+        self.format = post['format']  # String The post format: html or markdown
+        self.reblog_key = post["reblog_key"]  # The key used to reblog this post
+        self.tags = post['tags']  # Array(string) Tags applied to the post
+        self.short_url = post['short_url']
+        self.summary = post['summary']
+        self.is_blocks_post_format = post['is_blocks_post_format']
+        self.recommended_source = post['recommended_source']
+        self.recommended_color = post['recommended_color']
+        self.followed = post['followed']
+        self.liked = post['liked']
+        self.note_count = post['note_count']
+        self.can_like = post['can_like']
+        self.can_reblog = post['can_reblog']
+        self.can_send_in_message = post['can_send_in_message']
+        self.can_reply = post['can_reply']
+        self.display_avatar = post['display_avatar']
+
+        try:
+            if "text" in self.type:
+                self.title = post['title']
+                self.body = post['body']
+                self.trail = post['trail']
+                self.reblog = post['reblog']
+            elif "photo" in self.type:
+                self.caption = post['caption']
+                self.photos = post['photos']
+                self.trail = post['trail']
+                self.reblog = post['reblog']
+            elif "quote" in self.type:
+                self.text = post['text']
+                self.source = post['source']
+                self.reblog = post['reblog']
+            elif "link" in self.type:
+                self.title = post['title']
+                self.url = post['url']
+                self.link_author = post['link_author']
+                self.excerpt = post['excerpt']
+                self.publisher = post['publisher']
+                self.description = post['description']
+                self.trail = post['trail']
+                self.reblog = post['reblog']
+            elif "chat" in self.type:
+                self.title = post['title']
+                self.body = post['body']
+                self.dialogue = post['dialogue']
+            elif "audio" in self.type:
+                self.id3_title = post['id3_title']
+                self.caption = post['caption']
+                self.embed = post['embed']
+                self.plays = post['plays']
+                self.trail = post['trail']
+                self.reblog = post['reblog']
+            elif "video" in self.type:
+                self.caption = post['caption']
+                if 'permalink_url' in post:
+                    self.permalink_url = post['permalink_url']
+                if 'video_url' in post:
+                    self.video_url = post['video_url']
+                self.html5_capable = post['html5_capable']
+                self.thumbnail_url = post['thumbnail_url']
+                self.thumbnail_width = post['thumbnail_width']
+                self.thumbnail_height = post['thumbnail_height']
+                if 'duration' in post:
+                    self.duration = post['duration']
+                self.video_type = post['video_type']
+                self.player = post['player']
+                self.trail = post['trail']
+                self.reblog = post['reblog']
+            elif "answer" in self.type:
+                self.asking_name = post['asking_name']
+                self.asking_url = post['asking_name']
+                self.question = post['question']
+                self.answer = post['answer']
+                self.trail = post['trail']
+                self.reblog = post['reblog']
+        except KeyError as error:
+            print(error)
+            print(post)
+
+
+
+
+
 
 

@@ -54,6 +54,7 @@ class Pinterest:
     # get the graph for a single board by board_url
     def fetch_pinterest_board_by_url(self, graph, board_url):
         board_result = self.get_single_board(board_url)
+        print(board_result)
         board = PinterestBoard(board_result["data"])
         graph.create_node(board)
 
