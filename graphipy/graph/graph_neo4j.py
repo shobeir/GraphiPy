@@ -1,4 +1,5 @@
 from py2neo import Graph
+import os
 import csv
 import pprint
 
@@ -9,6 +10,9 @@ class NeoGraph(BaseGraph):
     def __init__(self, credentials):
         BaseGraph.__init__(self)
         self.graph = Graph(credentials)
+        self.path = os.getcwd() + "\\csv"
+        if not os.path.exists(self.path):
+            os.mkdir(self.path)
 
     def get_labels(self, cursor, _type):
         labels = []
@@ -23,6 +27,14 @@ class NeoGraph(BaseGraph):
 
     def export_helper(self, labels, _type, prefix):
 
+        export_path = self.path + "\\" + prefix + "\\"
+        export_path_node = export_path + "nodes\\"
+        export_path_edge = export_path + "edges\\"
+        if not os.path.exists(export_path):
+            os.mkdir(export_path)
+            os.mkdir(export_path_node)
+            os.kmdir(export_path_edge)
+
         for label in labels:
 
             if _type == "node":
@@ -34,9 +46,17 @@ class NeoGraph(BaseGraph):
             if not data:
                 return
 
+            if _type == "node":
+                export_path = export_path_node
+            else:
+                export_path = export_path_edge
+
+            if not os.path.exists(export_path):
+                os.mkdir(export_path)
+
             with open(
-                    prefix + "_" + label + "_" + _type + ".csv",
-                    "w", newline="", encoding="utf-8") as outfile:
+                    export_path + label + ".csv",
+                    "w+", newline="", encoding="utf-8") as outfile:
                 w = csv.DictWriter(
                     outfile, data[0]["n"].keys(), extrasaction="ignore")
                 w.writeheader()
@@ -45,6 +65,7 @@ class NeoGraph(BaseGraph):
 
     def export_all_CSV(self, prefix):
         """ exports the whole graph as CSV file """
+
         query = "MATCH (n) RETURN distinct labels(n)"
         cursor = self.graph.run(query).data()
         labels = self.get_labels(cursor, "node")
@@ -71,9 +92,13 @@ class NeoGraph(BaseGraph):
         if no attribute is specified, returns all the attributes
         """
 
+        export_path = self.path + "\\" + prefix + "\\"
+        if not os.path.exists(export_path):
+            os.mkdir(export_path)
+
         for key in node_option:
             query = ["MATCH (n:", key.lower(), ") RETURN "]
-            csv_file = open(prefix + "_" + key + "_node.csv", "w")
+            csv_file = open(export_path + key + "_node.csv", "w")
             if not node_option[key]:
                 query.append("n")
                 query = ''.join(query)
