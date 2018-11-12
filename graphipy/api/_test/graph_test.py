@@ -1,7 +1,7 @@
-from usde.graph.graph_base import BaseEdge, BaseNode
-from usde.graph.graph_dict import DictGraph
-from usde.graph.graph_neo4j import NeoGraph
-from usde.graph.graph_pandas import PandasGraph
+from graphipy.graph.graph_base import BaseEdge, BaseNode
+from graphipy.graph.graph_dict import DictGraph
+from graphipy.graph.graph_neo4j import NeoGraph
+from graphipy.graph.graph_pandas import PandasGraph
 
 import time
 

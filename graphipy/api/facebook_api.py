@@ -1,7 +1,7 @@
 import os
 import json
 import facebook
-from usde.graph.graph_base import BaseNode as Node, BaseEdge as Edge
+from graphipy.graph.graph_base import BaseNode as Node, BaseEdge as Edge
 
 
 class Facebook:

@@ -2,7 +2,7 @@ from py2neo import Graph
 import csv
 import pprint
 
-from usde.graph.graph_base import BaseGraph
+from graphipy.graph.graph_base import BaseGraph
 
 
 class NeoGraph(BaseGraph):

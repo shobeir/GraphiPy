@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-from usde.graph.graph_base import BaseGraph
+from graphipy.graph.graph_base import BaseGraph
 
 
 # Graph object implemented by pandas

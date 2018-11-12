@@ -1,5 +1,5 @@
 import csv
-from usde.graph.graph_base import BaseGraph
+from graphipy.graph.graph_base import BaseGraph
 
 
 # Graph object implemented by dict
