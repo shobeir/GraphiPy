@@ -5,7 +5,25 @@ from usde.graph.graph_pandas import PandasGraph
 
 class LinkedinPosition(Node):
     def __init__(self, position):
-        Node.__init__(self, position["id"], position["title"], "Position")
+        """
+        This class is the position node class which inherits from the BaseNode class
+        It describes the position a user has
+        The position node has following attribute:
+            Id
+            Title (Label for Gephi)
+            Company (Json)
+            Company Id
+            Company Industry
+            Company Name
+            Company Size
+            Comment Type
+            Is Current Job (Boolean)
+            Location
+            Start Month
+            End Month
+            Summary
+        """
+        Node.__init__(self, str(position["id"]), position["title"], "Position")
         self.company = position["company"]
         self.company_id = position["company"]["id"]
         self.company_industry = position["company"]["industry"]
@@ -20,7 +38,32 @@ class LinkedinPosition(Node):
 
 class LinkedinProfile(Node):
     def __init__(self, profile):
-        Node.__init__(self, profile["id"], profile["formattedName"], "Profile")
+        """
+        This class is the profile node class which inherits from the BaseNode class
+        It describes the user profile
+        The position node has following attribute:
+            Id
+            Formatted name (Label for Gephi)
+            First name
+            Last Name
+            Head line
+            Industry
+            Location (Json)
+            Location Name
+            Location Country Code
+            Number of Connections
+            Number of Connections Capped (Boolean)
+            Picture Url
+            Summary
+
+            May have:
+            Maiden Name
+            Phonetic First Name
+            Phonetic Last Name
+            Formatted Phonetic Name
+            Speicialities
+        """
+        Node.__init__(self, str(profile["id"]), profile["formattedName"], "Profile")
         self.first_name = profile["firstName"]
         self.last_name = profile["lastName"]
         self.headline = profile["headline"]
@@ -45,10 +88,19 @@ class LinkedinProfile(Node):
 
 
 class Linkedin:
+    """
+        Linkedin v1 API has limited functionality which only supports searching for the authorized person
+        More functionalities can be achieved by using v2 which can be required by apply at:
+        https://business.linkedin.com/marketing-solutions/marketing-partners/become-a-partner/marketing-developer-program
+    """
     def __init__(self,api, options="pandas"):
         self.access_token = api["access_token"]
 
     def get_self_info(self):
+        """
+        This method queries for the user profile
+        :return: profile json
+        """
         url =  "https://api.linkedin.com/v1/people/~:(" \
                "id," \
                "first-name," \
@@ -78,6 +130,12 @@ class Linkedin:
         return result
 
     def process_positions(self, graph, profile):
+        """
+        This method processes the profile json and generates several position nodes and add to the graph
+        :param graph: The graph we are passing in
+        :param profile: The profile json
+        :return: The graph
+        """
         positions = profile["positions"]
         num = positions["_total"]
         positions_array = positions["values"]
@@ -85,10 +143,16 @@ class Linkedin:
             position = positions_array[i]
             position_node = LinkedinPosition(position)
             graph.create_node(position_node)
+            graph.create_edge(Edge(str(profile["id"]),str(position["id"]), "hasPosition"))
         return graph
 
 
     def fetch_self_node(self, graph):
+        """
+        This method queries for the profile and generates the graph about the profile
+        :param graph: The graph we are passing in
+        :return: The graph
+        """
         profile = self.get_self_info()
 
         profile_node = LinkedinProfile(profile)
