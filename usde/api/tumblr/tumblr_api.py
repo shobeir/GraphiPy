@@ -99,7 +99,7 @@ class Tumblr:
         self,
         graph,
         blog_name,
-        type="text",
+        type=None,
         tag="",
         limit=20,
         offset=0
@@ -155,11 +155,13 @@ class Tumblr:
             blog = self.tumblr.blog_info(blog_name)['blog']
 
             # Create a node for the blog
-            graph.create_node(Blog(blog))
+            blog_node = Blog(blog)
+            graph.create_node(blog_node)
             # Create a node for each post
             for liked_post in liked_posts:
-                graph.create_node(Post(liked_post))
-                graph.create_edge(Edge(blog['name'], str(liked_post['id']), "LIKED"))
+                post_node = Post(liked_post)
+                graph.create_node(post_node)
+                graph.create_edge(Edge(blog_node.get_id(), str(post_node.get_id()), "LIKED"))
         except KeyError as error:
             print(error)
             print(liked_posts_raw)
