@@ -3,8 +3,9 @@ import os
 
 from graphipy.graph.graph_base import BaseGraph
 
-
 # Graph object implemented by pandas
+
+
 class PandasGraph(BaseGraph):
     def __init__(self):
         BaseGraph.__init__(self)
@@ -24,10 +25,6 @@ class PandasGraph(BaseGraph):
         self.path = os.getcwd() + "\\csv"
         if not os.path.exists(self.path):
             os.mkdir(self.path)
-
-    def test_directory(self):
-        import os
-        print(os.getcwd())
 
     def convert_to_df(self, _type):
 
@@ -57,8 +54,13 @@ class PandasGraph(BaseGraph):
         """ exports all dataframes as csv """
 
         export_path = self.path + "\\" + prefix + "\\"
+        export_path_node = export_path + "nodes\\"
+        export_path_edge = export_path + "edges\\"
+
         if not os.path.exists(export_path):
             os.mkdir(export_path)
+            os.mkdir(export_path_node)
+            os.mkdir(export_path_edge)
 
         # append remaining nodes/edges to dataframe
         self.convert_to_df("both")
@@ -67,13 +69,13 @@ class PandasGraph(BaseGraph):
         n_df = self.get_nodes()
         for key in n_df.keys():
             # convert data frame to csv
-            n_df[key].to_csv(export_path + key + "_node.csv",
+            n_df[key].to_csv(export_path_node + key + ".csv",
                              encoding="utf-8", index=False)
         # get edge data frames
         e_df = self.get_edges()
         for key in e_df.keys():
             # convert data frame to csv
-            e_df[key].to_csv(export_path + key + "_edge.csv",
+            e_df[key].to_csv(export_path_edge + key + ".csv",
                              encoding="utf-8", index=False)
 
     # export data frame to csv specified by node label and edge label
