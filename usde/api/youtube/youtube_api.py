@@ -6,6 +6,7 @@ from apiclient.discovery import build_from_document
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run_flow
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 from googleapiclient.discovery import build
 
@@ -150,26 +151,6 @@ class Youtube:
 
         self.youtube = build(self.YOUTUBE_API_SERVICE_NAME, self.YOUTUBE_API_VERSION,
                              developerKey=self.DEVELOPER_KEY)
-        self.get_authenticated_service()
-
-    def get_authenticated_service(self):
-        """
-        This method Authorize the request and store authorization credentials.
-        """
-        flow = flow_from_clientsecrets(self.CLIENT_SECRET_FILE, scope=self.YOUTUBE_READ_WRITE_SSL_SCOPE,
-                                       message=self.MISSING_CLIENT_SECRET_MESSAGE)
-
-        storage = Storage("%s-oauth2.json" % sys.argv[0])
-        credentials = storage.get()
-
-        if credentials is None or credentials.invalid:
-            credentials = run_flow(flow, storage)
-
-        # Trusted testers can download this discovery document from the developers page
-        # and it should be in the same directory with the code.
-        with open("youtube-v3-discoverydocument.json", "r") as f:
-            doc = f.read()
-            return build_from_document(doc, http=credentials.authorize(httplib2.Http()))
 
     def create_node_by_channel_id(self, channel_id):
         """
@@ -295,6 +276,11 @@ class Youtube:
                     graph.create_edge(Edge(reply_id, video_id, "comment"))
 
         return graph
+
+    def get_authenticated_service():
+      flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+      credentials = flow.run_console()
+      return build(API_SERVICE_NAME, API_VERSION, credentials = credentials)
 
     def fetch_channels_by_topic(self, graph, topic, maxResult=25):
         """
