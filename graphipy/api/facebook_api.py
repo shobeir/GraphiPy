@@ -29,6 +29,7 @@ class Facebook:
 
         # Create a user node in the graph
         graph.create_node(User(user))
+        return graph
 
     def fetch_facebook_user_created_post(
             self,
@@ -73,6 +74,8 @@ class Facebook:
             graph.create_node(post_node)
             graph.create_edge(Edge(user_node.get_id(), post_node.get_id(), "POSTED"))
 
+        return graph
+
     def fetch_facebook_user_liked_pages(
             self,
             graph,
@@ -116,11 +119,8 @@ class Facebook:
             graph.create_node(community_node)
             graph.create_edge(Edge(user_node.get_id(), community_node.get_id(), "LIKED"))
 
-    def fetch_facebook_user_friends(
-            self,
-            id
-    ):
-        profile = self.graph.get_object(id, fields='friends{name,id}')
+        return graph
+
 
     def fetch_facebook_post_comments(
             self,
@@ -176,6 +176,8 @@ class Facebook:
             # create an edge bewteen user id and comment id
             graph.create_edge(Edge(user_node.get_id(), comment_node.get_id(), "COMMENTED"))
 
+        return graph
+
     def fetch_facebook_community_info(
             self,
             graph,
@@ -197,6 +199,8 @@ class Facebook:
         community_node = Community(community)
         # create a node for community
         graph.create_node(community_node)
+
+        return graph
 
     def fetch_facebook_community_feed(
             self,
@@ -241,11 +245,7 @@ class Facebook:
             graph.create_node(post_node)
             graph.create_edge(Edge(community_node.get_id(), post_node.get_id(), "POSTED"))
 
-    def fetch_facebook_event_info(
-            self,
-            id
-    ):
-        result = self.graph.get_object(id, fields='about,name,id')
+        return graph
 
 
 class User(Node):
