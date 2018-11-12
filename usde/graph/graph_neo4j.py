@@ -122,11 +122,11 @@ class NeoGraph(BaseGraph):
 
     def get_nodes(self):
         """ returns a neo4j cursor of all the nodes """
-        return self.graph.run("MATCH (n) RETURN n")
+        return self.graph.run("MATCH (n) RETURN n").data()
 
     def get_edges(self):
         """ returns a neo4j cursor of all the edges """
-        return self.graph.run("MATCH (n)-[r]->(m) RETURN r")
+        return self.graph.run("MATCH (n)-[r]->(m) RETURN r").data()
 
     def execute(self, query, param={}):
         """ Allows users to execute their own query """
