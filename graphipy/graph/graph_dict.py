@@ -16,7 +16,9 @@ class DictGraph(BaseGraph):
             os.mkdir(self.path)
 
     def export_all_CSV(self, prefix):
+        """ Exports all dictionaries as CSV files and returns path to file """
 
+        # Create folders to export to
         export_path = self.path + "\\" + prefix + "\\"
         export_path_node = export_path + "nodes\\"
         export_path_edge = export_path + "edges\\"
@@ -65,8 +67,26 @@ class DictGraph(BaseGraph):
                     value_row = vars(edges[key][edge_key]).values()
                     w.writerow([s for s in value_row])
 
+        return export_path
+
     # export data frame to csv specified by node label and edge label
     def export_CSV(self, prefix, node_option=set(), edge_option=set()):
+        """ Exports specific nodes and edges as CSV files and returns path to file """
+
+        # Create folders to export to
+        export_path = self.path + "\\" + prefix + "\\"
+        export_path_node = export_path + "nodes\\"
+        export_path_edge = export_path + "edges\\"
+
+        if not os.path.exists(export_path):
+            os.mkdir(export_path)
+
+        if not os.path.exists(export_path_node):
+            os.mkdir(export_path_node)
+
+        if not os.path.exists(export_path_edge):
+            os.mkdir(export_path_edge)
+
         if len(node_option) > 0:
             # get all nodes
             nodes = self.get_nodes()
@@ -74,7 +94,7 @@ class DictGraph(BaseGraph):
                 # if matches node label that user wants
                 if key in node_option:
                     # create a csv file and write in data
-                    with open(prefix + "_" + key + "_node_by_dict.csv", 'w', newline='') as f:
+                    with open(export_path_node + key + "_node_by_dict.csv", 'w', newline='') as f:
                         w = csv.writer(f)
                         has_first_row = False
                         # iterate through {id, node}
@@ -95,7 +115,7 @@ class DictGraph(BaseGraph):
                 # if matches edge label that user wants
                 if key in edge_option:
                     # create a csv file and write in data
-                    with open(prefix + "_" + key + "_edge_by_dict.csv", 'w', newline='') as f:
+                    with open(export_path_edge + key + "_edge_by_dict.csv", 'w', newline='') as f:
                         w = csv.writer(f)
                         has_first_row = False
                         # iterate through {id, node}
@@ -108,6 +128,8 @@ class DictGraph(BaseGraph):
                             # add value row to csv file
                             value_row = vars(edges[key][edge_key]).values()
                             w.writerow([s for s in value_row])
+
+        return export_path
 
     def create_node(self, node):
         node_label = node.get_label_attribute()
