@@ -26,14 +26,21 @@ class NeoGraph(BaseGraph):
         return labels
 
     def export_helper(self, labels, _type, prefix):
+        """ helper function for export """
 
+        # Create folders to export to
         export_path = self.path + "\\" + prefix + "\\"
         export_path_node = export_path + "nodes\\"
         export_path_edge = export_path + "edges\\"
+
         if not os.path.exists(export_path):
             os.mkdir(export_path)
+
+        if not os.path.exists(export_path_node):
             os.mkdir(export_path_node)
-            os.kmdir(export_path_edge)
+
+        if not os.path.exists(export_path_edge):
+            os.mkdir(export_path_edge)
 
         for label in labels:
 
@@ -63,8 +70,10 @@ class NeoGraph(BaseGraph):
                 for record in data:
                     w.writerow(record["n"])
 
+        return export_path
+
     def export_all_CSV(self, prefix):
-        """ exports the whole graph as CSV file """
+        """ exports the whole graph as CSV file and returns path to file """
 
         query = "MATCH (n) RETURN distinct labels(n)"
         cursor = self.graph.run(query).data()
@@ -74,13 +83,13 @@ class NeoGraph(BaseGraph):
         query = "MATCH (m)-[n]->(o) RETURN distinct type(n)"
         cursor = self.graph.run(query).data()
         labels = self.get_labels(cursor, "edge")
-        self.export_helper(labels, "edge", prefix)
+        return self.export_helper(labels, "edge", prefix)
 
     def export_CSV(self, prefix, node_option=set(), edge_option=set()):
-        """ exports selected nodes as separate CSV files """
+        """ exports selected nodes as separate CSV files and returns path to file """
 
         self.export_helper(node_option, "node", prefix)
-        self.export_helper(edge_option, "node", prefix)
+        return self.export_helper(edge_option, "node", prefix)
 
     def export_CSV_attr(self, prefix, node_option={}, edge_option=set()):
         """
@@ -90,15 +99,23 @@ class NeoGraph(BaseGraph):
         }
 
         if no attribute is specified, returns all the attributes
+
+        function returns path to file exported
         """
 
+        # Create folders to export to
         export_path = self.path + "\\" + prefix + "\\"
+        export_path_node = export_path + "nodes\\"
+
         if not os.path.exists(export_path):
             os.mkdir(export_path)
 
+        if not os.path.exists(export_path_node):
+            os.mkdir(export_path_node)
+
         for key in node_option:
             query = ["MATCH (n:", key.lower(), ") RETURN "]
-            csv_file = open(export_path + key + "_node.csv", "w")
+            csv_file = open(export_path_node + key + "_node.csv", "w")
             if not node_option[key]:
                 query.append("n")
                 query = ''.join(query)
@@ -113,7 +130,7 @@ class NeoGraph(BaseGraph):
                 self.graph.run(query).to_table().write_csv(file=csv_file)
             csv_file.close()
 
-        self.export_helper(edge_option, "edge", prefix)
+        return self.export_helper(edge_option, "edge", prefix)
 
     def create_node(self, node):
         """ Inserts a node into the graph """
@@ -158,4 +175,5 @@ class NeoGraph(BaseGraph):
         self.graph.run(query, parameters=param)
 
     def delete_graph(self):
+        """ Deletes all nodes and relationships in the graph """
         self.graph.run("MATCH (n) DETACH DELETE n")

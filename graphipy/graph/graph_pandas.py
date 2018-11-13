@@ -53,6 +53,7 @@ class PandasGraph(BaseGraph):
     def export_all_CSV(self, prefix):
         """ exports all dataframes as csv """
 
+        # Create folders to export to
         export_path = self.path + "\\" + prefix + "\\"
         export_path_node = export_path + "nodes\\"
         export_path_edge = export_path + "edges\\"
@@ -86,9 +87,19 @@ class PandasGraph(BaseGraph):
     def export_CSV(self, prefix, node_option=set(), edge_option=set()):
         """ exports a specified dataframe as csv """
 
+        # Create folders to export to
         export_path = self.path + "\\" + prefix + "\\"
+        export_path_node = export_path + "nodes\\"
+        export_path_edge = export_path + "edges\\"
+
         if not os.path.exists(export_path):
             os.mkdir(export_path)
+
+        if not os.path.exists(export_path_node):
+            os.mkdir(export_path_node)
+
+        if not os.path.exists(export_path_edge):
+            os.mkdir(export_path_edge)
 
         # append remaining nodes/edges to dataframe
         self.convert_to_df("both")
@@ -99,16 +110,16 @@ class PandasGraph(BaseGraph):
             for key in n_df.keys():
                 # if matches node label that user wants
                 if key in node_option:
-                    n_df[key].to_csv(export_path + key +
-                                     "_node.csv", encoding="utf-8", index=False)
+                    n_df[key].to_csv(export_path_node + key +
+                                     ".csv", encoding="utf-8", index=False)
         if len(edge_option) > 0:
             # get edge data frames
             e_df = self.get_edges()
             for key in e_df.keys():
                  # if matches edge label that user wants
                 if key in edge_option:
-                    e_df[key].to_csv(export_path + key +
-                                     "_edge.csv", encoding="utf-8", index=False)
+                    e_df[key].to_csv(export_path_edge + key +
+                                     ".csv", encoding="utf-8", index=False)
 
     def create_node(self, node):
         """ creates a node in the graph """
