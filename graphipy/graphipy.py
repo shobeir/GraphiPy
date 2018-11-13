@@ -10,12 +10,11 @@ from graphipy.graph.graph_pandas import PandasGraph
 from graphipy.graph.graph_dict import DictGraph
 from graphipy.graph.graph_neo4j import NeoGraph
 
-from matplotlib import colors as c
-import matplotlib.pyplot as plt
 import networkx as nx
+import matplotlib.pyplot as plt
+from matplotlib import colors as c
 import random
 import os
-import csv
 
 
 class GraphiPy:
@@ -88,7 +87,7 @@ class GraphiPy:
 
         return nx_graph
 
-    def nx_create_from_dict(self, nodes_dict, edges_dict, nx_graph=None, directional=False):
+    def nx_create_from_dict(self, edges_dict, nodes_dict, nx_graph=None, directional=False):
         # Create graph from edge dictionaries
         if nx_graph is None:
             if directional:
@@ -107,7 +106,7 @@ class GraphiPy:
                     "label_attribute": edge.label_attribute,
                     "_id": edge._id
                 }
-                nx_graph.add_edge(source, target, **attr)
+                nx_graph.add_edge(source, target, attr_dict=attr)
 
         # Add node attributes
         for key in nodes_dict:
@@ -122,63 +121,11 @@ class GraphiPy:
 
         return nx_graph
 
-    def nx_create_from_csv(self, edges_path, nodes_path, nx_graph=None, directional=False):
+    def nx_create_from_csv():
+        pass
 
-        if nx_graph is None:
-            if directional:
-                nx_graph = nx.DiGraph()
-            else:
-                nx_graph = nx.Graph()
-
-        for filename in os.listdir(edges_path):
-            reader = csv.DictReader(open(edges_path + filename))
-            for edge in reader:
-                source = edge["Source"]
-                target = edge["Target"]
-                attr = {
-                    "Label": edge["Label"],
-                    "label_attribute": edge["label_attribute"],
-                    "_id": edge["_id"]
-                }
-                nx_graph.add_edge(source, target, **attr)
-
-        for filename in os.listdir(nodes_path):
-            reader = csv.DictReader(open(nodes_path + filename))
-            for node in reader:
-                node_id = node["_id"]
-                nx_node = nx_graph.node[node_id]
-                for attr in node.keys():
-                    nx_node[attr] = node[attr]
-
-        return nx_graph
-
-    def nx_create_from_neo4j(self, nodes, edges, nx_graph=None, directional=False):
-
-        if nx_graph is None:
-            if directional:
-                nx_graph = nx.DiGraph()
-            else:
-                nx_graph = nx.Graph()
-
-        for edge in edges:
-            edge = edge["r"]
-            source = edge["Source"]
-            target = edge["Target"]
-            attr = {
-                "Label": edge["Label"],
-                "label_attribute": edge["label_attribute"],
-                "_id": edge["_id"]
-            }
-            nx_graph.add_edge(source, target, **attr)
-
-        for node in nodes:
-            node = node["n"]
-            node_id = node["_id"]
-            nx_node = nx_graph.node[node_id]
-            for attr in node.keys():
-                nx_node[attr] = node[attr]
-
-        return nx_graph
+    def nx_create_from_neo4j():
+        pass
 
     def nx_draw_random(self, nx_graph=None, pos=None, legend=False, color_edge=True, axis=False):
         import matplotlib.colors as c
