@@ -108,6 +108,7 @@ class DictGraph(BaseGraph):
                             # add value row to csv file
                             value_row = vars(nodes[key][node_key]).values()
                             w.writerow([s for s in value_row])
+
         if len(edge_option) > 0:
             # get all edges
             edges = self.get_edges()

@@ -230,6 +230,7 @@ class GraphiPy:
                 edge_categories[key] = [(edge[0], edge[1])]
 
         # Draw nodes
+
         if color_set:
             colors = color_set.copy()
         else:
@@ -278,5 +279,6 @@ class GraphiPy:
             return plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=ncol)
 
     def remove_light_colors(self, colors):
+        # White nodes would not be seen in a white background
+        # Remove more colors as necessary
         colors.remove("white")
-        pass
