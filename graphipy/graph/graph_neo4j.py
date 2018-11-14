@@ -63,7 +63,7 @@ class NeoGraph(BaseGraph):
 
             with open(
                     export_path + label + ".csv",
-                    "w+", newline="", encoding="utf-8") as outfile:
+                    "w", newline="", encoding="utf-8") as outfile:
                 w = csv.DictWriter(
                     outfile, data[0]["n"].keys(), extrasaction="ignore")
                 w.writeheader()
@@ -115,7 +115,7 @@ class NeoGraph(BaseGraph):
 
         for key in node_option:
             query = ["MATCH (n:", key.lower(), ") RETURN "]
-            csv_file = open(export_path_node + key + "_node.csv", "w")
+            csv_file = open(export_path_node + key + ".csv", "w")
             if not node_option[key]:
                 query.append("n")
                 query = ''.join(query)
@@ -136,9 +136,9 @@ class NeoGraph(BaseGraph):
         """ Inserts a node into the graph """
         parameter_dict = {'params': vars(node)}
         query_list = [
-            "MERGE (node: ",
+            "MERGE (node: `",
             node.Label,
-            " {_id: '",
+            "` {_id: '",
             node.get_id(),
             "'}) SET node = {params}"
         ]
@@ -155,9 +155,9 @@ class NeoGraph(BaseGraph):
             source,
             "'}) MATCH(target {_id: '",
             target,
-            "'}) MERGE(source)-[r:",
+            "'}) MERGE(source)-[r:`",
             edge.Label,
-            "]->(target) SET r = {params}"
+            "`]->(target) SET r = {params}"
         ]
         query = ''.join(query_list)
         self.graph.run(query, parameters=parameter_dict)

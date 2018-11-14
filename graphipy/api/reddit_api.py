@@ -417,7 +417,7 @@ class Redditor(Node):
         self,
         redditor
     ):
-        Node.__init__(self, redditor["id"], "redditor", "redditor")
+        Node.__init__(self, redditor["id"], redditor["name"], "redditor")
         for key in redditor:
             if key == "id":
                 continue
@@ -431,7 +431,8 @@ class Submission(Node):
         self,
         submission
     ):
-        Node.__init__(self, submission["id"], "submission", "submission")
+        Node.__init__(
+            self, submission["id"], "submission_" + submission["id"], "submission")
         for key in submission:
             if key == "id":
                 continue
@@ -446,7 +447,7 @@ class Subreddit(Node):
         subreddit
     ):
         Node.__init__(self, subreddit["id"],
-                      "subreddit", "subreddit")
+                      subreddit["display_name"], "subreddit")
         for key in subreddit:
             if key == "id":
                 continue
@@ -460,7 +461,8 @@ class Comment(Node):
         self,
         comment
     ):
-        Node.__init__(self, comment["id"], "comment", "comment")
+        Node.__init__(self, comment["id"],
+                      "comment_" + comment["id"], "comment")
         for key in comment:
             if key == "id" or key == "replies":
                 continue

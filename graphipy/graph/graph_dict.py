@@ -37,7 +37,7 @@ class DictGraph(BaseGraph):
 
         for key in nodes:
             # create a csv file and write in data
-            with open(export_path_node + key + ".csv", 'w', newline='') as f:
+            with open(export_path_node + key + ".csv", "w", newline='') as f:
                 w = csv.writer(f)
                 has_first_row = False
                 for node_key in nodes[key]:
@@ -53,7 +53,7 @@ class DictGraph(BaseGraph):
 
         for key in edges:
             # create a csv file and write in data
-            with open(export_path_edge + key + ".csv", 'w', newline='') as f:
+            with open(export_path_edge + key + ".csv", "w", newline='') as f:
                 w = csv.writer(f)
                 has_first_row = False
                 for edge_key in edges[key]:
@@ -94,7 +94,7 @@ class DictGraph(BaseGraph):
                 # if matches node label that user wants
                 if key in node_option:
                     # create a csv file and write in data
-                    with open(export_path_node + key + "_node_by_dict.csv", 'w', newline='') as f:
+                    with open(export_path_node + key + ".csv", "w", newline='') as f:
                         w = csv.writer(f)
                         has_first_row = False
                         # iterate through {id, node}
@@ -115,7 +115,7 @@ class DictGraph(BaseGraph):
                 # if matches edge label that user wants
                 if key in edge_option:
                     # create a csv file and write in data
-                    with open(export_path_edge + key + "_edge_by_dict.csv", 'w', newline='') as f:
+                    with open(export_path_edge + key + ".csv", "w", newline='') as f:
                         w = csv.writer(f)
                         has_first_row = False
                         # iterate through {id, node}

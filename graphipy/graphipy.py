@@ -131,7 +131,8 @@ class GraphiPy:
                 nx_graph = nx.Graph()
 
         for filename in os.listdir(edges_path):
-            reader = csv.DictReader(open(edges_path + filename))
+            reader = csv.DictReader(
+                open(edges_path + filename, encoding="utf-8"))
             for edge in reader:
                 source = edge["Source"]
                 target = edge["Target"]
@@ -143,7 +144,8 @@ class GraphiPy:
                 nx_graph.add_edge(source, target, **attr)
 
         for filename in os.listdir(nodes_path):
-            reader = csv.DictReader(open(nodes_path + filename))
+            reader = csv.DictReader(
+                open(nodes_path + filename, encoding="utf-8"))
             for node in reader:
                 node_id = node["_id"]
                 nx_node = nx_graph.node[node_id]
@@ -180,63 +182,93 @@ class GraphiPy:
 
         return nx_graph
 
-    def nx_draw_random(self, nx_graph=None, pos=None, legend=False, color_edge=True, axis=False):
-        import matplotlib.colors as c
-        import random
+    def nx_draw_random(self, nx_graph=None, pos=None, options=None, legend=False, axis=False):
 
         if pos is None:
-            pos = nx.random_layout(nx_graph)
+            pos = nx.spring_layout(nx_graph)
 
         if not axis:
             plt.axis('off')
 
-        # Get labels
-        node_labels = nx.get_node_attributes(nx_graph, "Label")
-        edge_labels = nx.get_edge_attributes(nx_graph, "Label")
+        node_label = None
+        edge_label = None
+        colorful_edges = False
+        color_set = None
+        if options:
+            if "node_label" in options:
+                node_label = options["node_label"]
+            if "edge_label" in options:
+                edge_label = options["edge_label"]
+            if "colorful_edges" in options:
+                colorful_edges = options["colorful_edges"]
+            if "color_set" in options:
+                color_set = options["color_set"]
 
         # Separate nodes by category
-        node_categories = {}
+        node_categories = {"_other": []}
         for node in nx_graph.nodes(data=True):
+            if "label_attribute" not in node[1]:
+                node_categories["_other"].append(node[0])
+                continue
             node = node[1]
-            key = node["Label"]
+            key = node["label_attribute"]
             if key in node_categories:
                 node_categories[key].append(node["_id"])
             else:
                 node_categories[key] = [node["_id"]]
 
         # Separate edges by category
-        edge_categories = {}
+        edge_categories = {"_other": []}
         for edge in nx_graph.edges(data=True):
-            key = edge[2]["Label"]
+            if "label_attribute" not in edge[2]:
+                edge_categories["_other"].append((edge[0], edge[1]))
+                continue
+            key = edge[2]["label_attribute"]
             if key in edge_categories:
                 edge_categories[key].append((edge[0], edge[1]))
             else:
                 edge_categories[key] = [(edge[0], edge[1])]
 
         # Draw nodes
-        colors = set(c.BASE_COLORS)
-        colors.remove("w")
+        if color_set:
+            colors = color_set.copy()
+        else:
+            colors = set(c.CSS4_COLORS)
+            self.remove_light_colors(colors)
         chosen = set()
         draw_nodes = []
         for key in node_categories:
             color = random.choice(tuple(colors))
             draw_nodes.append(nx.draw_networkx_nodes(
-                node_categories[key], pos, node_color=color, node_size=75, label=key))
+                node_categories[key], pos, node_color=color, node_size=200, label=key))
             colors.remove(color)
 
         # Draw edges
-        if color_edge:
-            colors = set(c.BASE_COLORS)
-            colors.remove("w")
         draw_edges = []
-        for key in edge_categories:
-            if color_edge:
-                color = random.choice(tuple(colors))
+        if colorful_edges:
+            if color_set:
+                colors = color_set.copy()
             else:
-                color = "b"
+                colors = set(c.CSS4_COLORS)
+                self.remove_light_colors(colors)
+            for key in edge_categories:
+                color = random.choice(tuple(colors))
+                draw_edges.append(nx.draw_networkx_edges(
+                    nx_graph, edgelist=edge_categories[key], pos=pos, edge_color=color, label=key, width=2))
+                colors.remove(color)
+        else:
             draw_edges.append(nx.draw_networkx_edges(
-                nx_graph, edgelist=edge_categories[key], pos=pos, edge_color=color, label=key, width=2))
-            colors.remove(color)
+                nx_graph, edgelist=nx_graph.edges(), pos=pos, edge_color="b", width=2))
+
+        # Draw labels
+        if node_label is not None:
+            node_labels = nx.get_node_attributes(nx_graph, node_label)
+            nx.draw_networkx_labels(nx_graph, pos, node_labels)
+
+        if edge_label is not None:
+            edge_labels = nx.get_edge_attributes(nx_graph, edge_label)
+            nx.draw_networkx_edge_labels(
+                nx_graph, pos, edge_labels)
 
         if legend:
             ncol = len(node_categories) if len(node_categories) > len(
@@ -244,3 +276,7 @@ class GraphiPy:
             if ncol > 4:
                 ncol = 4
             return plt.legend(loc=9, bbox_to_anchor=(0.5, -0.1), ncol=ncol)
+
+    def remove_light_colors(self, colors):
+        colors.remove("white")
+        pass
