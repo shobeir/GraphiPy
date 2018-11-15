@@ -18,7 +18,7 @@ class NeoGraph(BaseGraph):
         labels = []
         if _type == "node":
             for record in cursor:
-                for l in record["labels(n)"]:
+                for l in record:
                     labels.append(l)
         else:
             for record in cursor:
@@ -45,24 +45,25 @@ class NeoGraph(BaseGraph):
         for label in labels:
 
             if _type == "node":
-                query = "MATCH (n:" + label + ") RETURN n"
+                query = "MATCH (n) WHERE n.label_attribute = '" + \
+                    label + "' RETURN n"
             else:
-                query = "MATCH (m)-[n:" + label + "]->(o) RETURN n"
+                query = "MATCH (m)-[n:`" + label + "`]->(o) RETURN n"
 
             data = self.graph.run(query).data()
             if not data:
                 return
 
             if _type == "node":
-                export_path = export_path_node
+                path = export_path_node
             else:
-                export_path = export_path_edge
+                path = export_path_edge
 
             if not os.path.exists(export_path):
                 os.mkdir(export_path)
 
             with open(
-                    export_path + label + ".csv",
+                    path + label + ".csv",
                     "w", newline="", encoding="utf-8") as outfile:
                 w = csv.DictWriter(
                     outfile, data[0]["n"].keys(), extrasaction="ignore")
@@ -72,11 +73,11 @@ class NeoGraph(BaseGraph):
 
         return export_path
 
-    def export_all_CSV(self, prefix):
+    def export_all_csv(self, prefix):
         """ exports the whole graph as CSV file and returns path to file """
 
-        query = "MATCH (n) RETURN distinct labels(n)"
-        cursor = self.graph.run(query).data()
+        query = "MATCH (n) WHERE EXISTS (n.label_attribute) RETURN DISTINCT n.label_attribute"
+        cursor = self.graph.run(query)
         labels = self.get_labels(cursor, "node")
         self.export_helper(labels, "node", prefix)
 
@@ -85,13 +86,13 @@ class NeoGraph(BaseGraph):
         labels = self.get_labels(cursor, "edge")
         return self.export_helper(labels, "edge", prefix)
 
-    def export_CSV(self, prefix, node_option=set(), edge_option=set()):
+    def export_csv(self, prefix, node_option=set(), edge_option=set()):
         """ exports selected nodes as separate CSV files and returns path to file """
 
         self.export_helper(node_option, "node", prefix)
-        return self.export_helper(edge_option, "node", prefix)
+        return self.export_helper(edge_option, "edge", prefix)
 
-    def export_CSV_attr(self, prefix, node_option={}, edge_option=set()):
+    def export_csv_attr(self, prefix, node_option={}, edge_option=set()):
         """
         allows user to select specific attributes for each node 
         node_option = {
@@ -114,7 +115,7 @@ class NeoGraph(BaseGraph):
             os.mkdir(export_path_node)
 
         for key in node_option:
-            query = ["MATCH (n:", key.lower(), ") RETURN "]
+            query = ["MATCH (n:`", key.lower(), "`) RETURN "]
             csv_file = open(export_path_node + key + ".csv", "w")
             if not node_option[key]:
                 query.append("n")
@@ -172,7 +173,7 @@ class NeoGraph(BaseGraph):
 
     def execute(self, query, param={}):
         """ Allows users to execute their own query """
-        self.graph.run(query, parameters=param)
+        return self.graph.run(query, parameters=param)
 
     def delete_graph(self):
         """ Deletes all nodes and relationships in the graph """

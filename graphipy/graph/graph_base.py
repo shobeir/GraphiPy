@@ -1,9 +1,9 @@
 # Base Graph Interface
 class BaseGraph:
-    def export_all_CSV(self, prefix):
+    def export_all_csv(self, prefix):
         pass
 
-    def export_CSV(self, prefix, node_option=set(), edge_option=set()):
+    def export_csv(self, prefix, node_option=set(), edge_option=set()):
         pass
 
     def create_node(self, node):

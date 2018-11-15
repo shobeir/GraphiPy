@@ -50,7 +50,7 @@ class PandasGraph(BaseGraph):
                 self.edges_dict[key] = {}
             self.edge_count = 0
 
-    def export_all_CSV(self, prefix):
+    def export_all_csv(self, prefix):
         """ exports all dataframes as csv """
 
         # Create folders to export to
@@ -83,8 +83,10 @@ class PandasGraph(BaseGraph):
             e_df[key].to_csv(export_path_edge + key + ".csv",
                              encoding="utf-8", index=False)
 
+        return export_path
+
     # export data frame to csv specified by node label and edge label
-    def export_CSV(self, prefix, node_option=set(), edge_option=set()):
+    def export_csv(self, prefix, node_option=set(), edge_option=set()):
         """ exports a specified dataframe as csv """
 
         # Create folders to export to
@@ -111,7 +113,7 @@ class PandasGraph(BaseGraph):
                 # if matches node label that user wants
                 if key in node_option:
                     n_df[key].to_csv(export_path_node + key +
-                                     ".csv", encoding="utf-8", index=False)
+                                     ".csv", newline="", encoding="utf-8", index=False)
         if len(edge_option) > 0:
             # get edge data frames
             e_df = self.get_edges()
@@ -119,7 +121,9 @@ class PandasGraph(BaseGraph):
                  # if matches edge label that user wants
                 if key in edge_option:
                     e_df[key].to_csv(export_path_edge + key +
-                                     ".csv", encoding="utf-8", index=False)
+                                     ".csv", newline="", encoding="utf-8", index=False)
+
+        return export_path
 
     def create_node(self, node):
         """ creates a node in the graph """
