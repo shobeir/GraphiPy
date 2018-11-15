@@ -132,7 +132,7 @@ class ExportNX:
 
         return nx_graph
 
-    def draw_random(self, nx_graph=None, pos=None, options=None, legend=None):
+    def draw_random(self, nx_graph, pos=None, options=None, legend=None):
 
         if pos is None:
             pos = nx.spring_layout(nx_graph)

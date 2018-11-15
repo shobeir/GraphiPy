@@ -201,8 +201,7 @@ class Reddit:
         graph,
         submission_id,
         limit=20,
-        sort="top",
-        top_level=False
+        sort="top"
     ):
         """
         Fetches comments of a submission

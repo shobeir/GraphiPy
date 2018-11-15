@@ -113,7 +113,7 @@ class PandasGraph(BaseGraph):
                 # if matches node label that user wants
                 if key in node_option:
                     n_df[key].to_csv(export_path_node + key +
-                                     ".csv", newline="", encoding="utf-8", index=False)
+                                     ".csv", encoding="utf-8", index=False)
         if len(edge_option) > 0:
             # get edge data frames
             e_df = self.get_edges()
@@ -121,7 +121,7 @@ class PandasGraph(BaseGraph):
                  # if matches edge label that user wants
                 if key in edge_option:
                     e_df[key].to_csv(export_path_edge + key +
-                                     ".csv", newline="", encoding="utf-8", index=False)
+                                     ".csv", encoding="utf-8", index=False)
 
         return export_path
 
