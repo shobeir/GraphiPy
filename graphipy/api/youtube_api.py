@@ -1,6 +1,5 @@
 # !/usr/bin/python
 import httplib2
-import sys
 
 from apiclient.discovery import build_from_document
 from oauth2client.client import flow_from_clientsecrets
@@ -137,7 +136,6 @@ class Youtube:
         self.YOUTUBE_API_SERVICE_NAME = 'youtube'
         self.YOUTUBE_API_VERSION = 'v3'
         self.DEVELOPER_KEY = api["api_key"]
-        self.CLIENT_SECRET_FILE = api["client_secret"]
         # This variable defines a message to display if the CLIENT_SECRETS_FILE is
         # missing.
         self.MISSING_CLIENT_SECRET_MESSAGE = """
