@@ -5,7 +5,7 @@ GraphiPy simplifies the extraction of data from different social media websites.
 
 Currently, GraphiPy provides support to 7 different websites:
 - [Reddit](https://www.reddit.com/dev/api/)
-- [Facebbok](https://developers.facebook.com/docs/graph-api/)
+- [Facebook](https://developers.facebook.com/docs/graph-api/)
 - [LinkedIn](https://developer.linkedin.com/docs/rest-api#) (Work in progress) 
 - [Pinterest](https://developers.pinterest.com/docs/getting-started/introduction/)
 - [Tumblr](https://www.tumblr.com/docs/en/api/v2)
@@ -35,7 +35,7 @@ GraphiPy directly connects and inserts to your Neo4j database. In order to avoid
 
 For more information on how to use GraphiPy, please see one of the notebooks:
 - [Reddit](https://github.com/shobeir/GraphiPy/blob/master/demo/RedditDemo.ipynb)
-- [Facebbok](https://github.com/shobeir/GraphiPy/blob/master/demo/FacebookDemo.ipynb)
+- [Facebook](https://github.com/shobeir/GraphiPy/blob/master/demo/FacebookDemo.ipynb)
 - [LinkedIn](https://github.com/shobeir/GraphiPy/blob/master/demo/LinkedinDemo.ipynb)
 - [Pinterest](https://github.com/shobeir/GraphiPy/blob/master/demo/PinterestDemo.ipynb)
 - [Tumblr](https://github.com/shobeir/GraphiPy/blob/master/demo/TumblrDemo.ipynb)
@@ -44,5 +44,11 @@ For more information on how to use GraphiPy, please see one of the notebooks:
 
 ## [Data Exportation and Visualization with NetworkX](https://github.com/shobeir/GraphiPy/blob/master/graphipy/exportnx.py)
 GraphiPy can also export data as CSV files and visualize the graphs using NetworkX. It is also possible to convert from one graph type to another (e.g. from Pandas to Neo4j and vice versa). For more information, see [this notebook](https://github.com/shobeir/GraphiPy/blob/master/demo/DataExportDemo.ipynb)
+
+## [Gephi Support]
+[Gephi](https://gephi.org/) is an open-source software for network visualization and analysis. It helps data analysts to intuitively reveal patterns and trends, highlight outliers and tells stories with their data.
+
+The csv files exported from Graphify can be directly imported to Gephi.
+
 
 
