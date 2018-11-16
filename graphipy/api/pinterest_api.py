@@ -66,16 +66,13 @@ class Pinterest:
         graph.create_edge(Edge(user.get_id(), board.get_id(), "CREATED"))
 
         pin_result = self.get_pins_from_board(board_url)
-        count = 0;
         for pin in pin_result["data"]:
             single_pin_result = self.get_single_pin(pin["id"])
             single_pin = PinterestPin(single_pin_result["data"])
             graph.create_node(single_pin)
             graph.create_edge(Edge(board.get_id(), single_pin.get_id(), "HAS"))
             graph.create_edge(Edge(single_pin.get_id(), board.get_id(), "ON"))
-            count += 1;
-            if count == 4:
-                break;
+            
         return graph
 
     # get the graph for a single pin by pin_id
