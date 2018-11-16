@@ -45,10 +45,13 @@ For more information on how to use GraphiPy, please see one of the notebooks:
 ## [Data Exportation and Visualization with NetworkX](https://github.com/shobeir/GraphiPy/blob/master/graphipy/exportnx.py)
 GraphiPy can also export data as CSV files and visualize the graphs using NetworkX. It is also possible to convert from one graph type to another (e.g. from Pandas to Neo4j and vice versa). For more information, see [this notebook](https://github.com/shobeir/GraphiPy/blob/master/demo/DataExportDemo.ipynb)
 
-## [Gephi Support]
+## Gephi Support
 [Gephi](https://gephi.org/) is an open-source software for network visualization and analysis. It helps data analysts to intuitively reveal patterns and trends, highlight outliers and tells stories with their data.
 
 The csv files exported from Graphify can be directly imported to Gephi.
+
+### Data of 20 youtube videos with keyword "dota2"
+![Data of 20 youtube videos with keyword "dota2"](https://user-images.githubusercontent.com/25040463/48648253-85e33080-e9a3-11e8-9412-cf0f2bd286de.png)
 
 
 
