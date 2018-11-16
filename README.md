@@ -42,6 +42,7 @@ For more information on how to use GraphiPy, please see one of the notebooks:
 - [Twitter](https://github.com/shobeir/GraphiPy/blob/master/demo/TwitterDemo.ipynb)
 - [YouTube](https://github.com/shobeir/GraphiPy/blob/master/demo/YoutubeDemo.ipynb)
 
+## [Data Exportation and Visualization with NetworkX](https://github.com/shobeir/GraphiPy/blob/master/graphipy/exportnx.py)
 GraphiPy can also export data as CSV files and visualize the graphs using NetworkX. It is also possible to convert from one graph type to another (e.g. from Pandas to Neo4j and vice versa). For more information, see [this notebook](https://github.com/shobeir/GraphiPy/blob/master/demo/DataExportDemo.ipynb)
 
 
