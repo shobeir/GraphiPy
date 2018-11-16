@@ -221,7 +221,7 @@ class Post (Node):
         post
     ):
         # print(post)
-        Node.__init__(self, post['id'], post['id'], "post")
+        Node.__init__(self, str(post['id']), str(post['id']), "post")
 
         self.type = post['type']  # Any one from text, photo, quote, link, chat, video, answer
         self.blog_name = post['blog_name']
