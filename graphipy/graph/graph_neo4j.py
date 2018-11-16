@@ -143,7 +143,7 @@ class NeoGraph(BaseGraph):
         query_list = [
             "MERGE (node: `",
             node.Label,
-            "` {_id: '",
+            "` {Id: '",
             node.get_id(),
             "'}) SET node = {params}"
         ]
@@ -156,9 +156,9 @@ class NeoGraph(BaseGraph):
         target = edge.Target
         parameter_dict = {'params': vars(edge)}
         query_list = [
-            "MATCH (source {_id: '",
+            "MATCH (source {Id: '",
             source,
-            "'}) MATCH(target {_id: '",
+            "'}) MATCH(target {Id: '",
             target,
             "'}) MERGE(source)-[r:`",
             edge.Label,

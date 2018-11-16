@@ -94,7 +94,7 @@ class GraphiPy:
                 for node in df.iterrows():
                     data = node[1]
                     node = BaseNode(
-                        data["_id"], data["Label"], data["label_attribute"])
+                        data["Id"], data["Label"], data["label_attribute"])
                     for attr in header:
                         setattr(node, attr, data[attr])
                     new_graph.create_node(node)
@@ -112,7 +112,7 @@ class GraphiPy:
         elif old_type == "neo4j":
             for node in old_nodes:
                 data = node["n"]
-                node = BaseNode(data["_id"], data["Label"],
+                node = BaseNode(data["Id"], data["Label"],
                                 data["label_attribute"])
                 for attr in data.keys():
                     setattr(node, attr, data[attr])

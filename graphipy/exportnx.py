@@ -31,7 +31,7 @@ class ExportNX:
             df = nodes_df[key]
 
             for index, row in df.iterrows():
-                _id = row["_id"]
+                _id = row["Id"]
                 node = nx_graph.node[_id]
 
                 for attr in row.keys():
@@ -59,7 +59,7 @@ class ExportNX:
                 attr = {
                     "Label": edge.Label,
                     "label_attribute": edge.label_attribute,
-                    "_id": edge._id
+                    "Id": edge.Id
                 }
                 nx_graph.add_edge(source, target, **attr)
 
@@ -96,7 +96,7 @@ class ExportNX:
                 attr = {
                     "Label": edge["Label"],
                     "label_attribute": edge["label_attribute"],
-                    "_id": edge["_id"]
+                    "Id": edge["Id"]
                 }
                 nx_graph.add_edge(source, target, **attr)
 
@@ -104,7 +104,7 @@ class ExportNX:
             reader = csv.DictReader(
                 open(nodes_path + filename, encoding="utf-8"))
             for node in reader:
-                node_id = node["_id"]
+                node_id = node["Id"]
                 nx_node = nx_graph.node[node_id]
                 for attr in node.keys():
                     nx_node[attr] = node[attr]
@@ -128,13 +128,13 @@ class ExportNX:
             attr = {
                 "Label": edge["Label"],
                 "label_attribute": edge["label_attribute"],
-                "_id": edge["_id"]
+                "Id": edge["Id"]
             }
             nx_graph.add_edge(source, target, **attr)
 
         for node in nodes:
             node = node["n"]
-            node_id = node["_id"]
+            node_id = node["Id"]
             nx_node = nx_graph.node[node_id]
             for attr in node.keys():
                 nx_node[attr] = node[attr]
@@ -169,9 +169,9 @@ class ExportNX:
             node = node[1]
             key = node["label_attribute"]
             if key in node_categories:
-                node_categories[key].append(node["_id"])
+                node_categories[key].append(node["Id"])
             else:
-                node_categories[key] = [node["_id"]]
+                node_categories[key] = [node["Id"]]
 
         # Separate edges by category
         edge_categories = {"_other": []}

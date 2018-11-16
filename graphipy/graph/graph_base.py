@@ -22,12 +22,12 @@ class BaseGraph:
 # Base Node class
 class BaseNode:
     def __init__(self, _id, label, label_attribute):
-        self._id = _id
+        self.Id = _id
         self.Label = label
         self.label_attribute = label_attribute
 
     def get_id(self):
-        return self._id
+        return self.Id
 
     def get_label_attribute(self):
         return self.label_attribute
@@ -40,7 +40,7 @@ class BaseEdge:
         self.Target = target
         self.Label = label
         self.label_attribute = label
-        self._id = ''.join([source, target, label])
+        self.Id = ''.join([source, target, label])
 
     def get_id(self):
         return self.Source + self.Target
