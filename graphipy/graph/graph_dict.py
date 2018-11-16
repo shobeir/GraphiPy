@@ -7,6 +7,7 @@ from graphipy.graph.graph_base import BaseGraph
 class DictGraph(BaseGraph):
     def __init__(self):
         BaseGraph.__init__(self)
+        self._type = "dictionary"
         # a dict of nodes and edges, key=label, value={id, node}
         self.nodes = {}
         self.edges = {}
@@ -14,6 +15,9 @@ class DictGraph(BaseGraph):
         self.path = os.getcwd() + "\\csv"
         if not os.path.exists(self.path):
             os.mkdir(self.path)
+
+    def graph_type(self):
+        return self._type
 
     def export_all_csv(self, prefix):
         """ Exports all dictionaries as CSV files and returns path to file """

@@ -9,10 +9,14 @@ from graphipy.graph.graph_base import BaseGraph
 class NeoGraph(BaseGraph):
     def __init__(self, credentials):
         BaseGraph.__init__(self)
+        self._type = "neo4j"
         self.graph = Graph(credentials)
         self.path = os.getcwd() + "\\csv"
         if not os.path.exists(self.path):
             os.mkdir(self.path)
+
+    def graph_type(self):
+        return self._type
 
     def get_labels(self, cursor, _type):
         labels = []

@@ -9,6 +9,7 @@ from graphipy.graph.graph_base import BaseGraph
 class PandasGraph(BaseGraph):
     def __init__(self):
         BaseGraph.__init__(self)
+        self._type = "pandas"
         # a dict of node data frames and edge data frames
         # key=label, value=dataframe
         self.nodes_df = {}
@@ -25,6 +26,9 @@ class PandasGraph(BaseGraph):
         self.path = os.getcwd() + "\\csv"
         if not os.path.exists(self.path):
             os.mkdir(self.path)
+
+    def graph_type(self):
+        return self._type
 
     def convert_to_df(self, _type):
 

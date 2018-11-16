@@ -8,7 +8,11 @@ class ExportNX:
     def __init__(self):
         pass
 
-    def create_from_pd(self, nodes_df, edges_df, nx_graph=None, directional=False):
+    def create_from_pd(self, pd_graph, nx_graph=None, directional=False):
+
+        nodes_df = pd_graph.get_nodes()
+        edges_df = pd_graph.get_edges()
+
         # Create graph from edgelist dataframes
         if nx_graph is None:
             if directional:
@@ -35,7 +39,10 @@ class ExportNX:
 
         return nx_graph
 
-    def create_from_dict(self, nodes_dict, edges_dict, nx_graph=None, directional=False):
+    def create_from_dict(self, dict_graph, nx_graph=None, directional=False):
+        nodes_dict = dict_graph.get_nodes()
+        edges_dict = dict_graph.get_edges()
+
         # Create graph from edge dictionaries
         if nx_graph is None:
             if directional:
@@ -104,7 +111,9 @@ class ExportNX:
 
         return nx_graph
 
-    def create_from_neo4j(self, nodes, edges, nx_graph=None, directional=False):
+    def create_from_neo4j(self, neo_graph, nx_graph=None, directional=False):
+        nodes = neo_graph.get_nodes()
+        edges = neo_graph.get_edges()
 
         if nx_graph is None:
             if directional:
