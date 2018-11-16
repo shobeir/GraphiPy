@@ -20,8 +20,21 @@ Currently, we have 3 graph types:
 - [Pandas](https://pandas.pydata.org/)
 - [Neo4j](https://neo4j.com/)
 
+All graph types are based on a class called [BaseGraph](https://github.com/shobeir/GraphiPy/blob/master/graphipy/graph/graph_base.py)
+
+## [Dictionary Graph](https://github.com/shobeir/GraphiPy/blob/master/graphipy/graph/graph_dict.py)
+To provide easy access, the type of the nodes and edges are stored as keys while the rows of data are stored as values. The rows of data is also a dictionary, with the \_id of the nodes and edges as keys (to avoid duplicate data) and the values would be the node and edge objects.
+
+## [Pandas Graph](https://github.com/shobeir/GraphiPy/blob/master/graphipy/graph/graph_pandas.py)
+Similar to the Dictionary Graph, the type of nodes and edges are stored as keys and the dataframes are stored as values.
+
+Since inserting rows one by one into the dataframe takes polynomial time, the implementation uses the help of Python's dictionary. After a certain number of elements are inside the dictionaries, all of them are converted into dataframes and appended into the existing dataframes.
+
+## [Neo4j Graph](https://github.com/shobeir/GraphiPy/blob/master/graphipy/graph/graph_neo4j.py)
+GraphiPy directly connects and inserts to your Neo4j database. In order to avoid duplicate data, MERGE is used instead of CREATE. Thus, whenever an existing node \_id is inserted, its attributes are updated instead of inserting a completely new node.
+
 For more information on how to use GraphiPy, please see one of the notebooks:
-- [Reddit(https://github.com/shobeir/GraphiPy/blob/master/demo/RedditDemo.ipynb)
+- [Reddit](https://github.com/shobeir/GraphiPy/blob/master/demo/RedditDemo.ipynb)
 - [Facebbok](https://github.com/shobeir/GraphiPy/blob/master/demo/FacebookDemo.ipynb)
 - [LinkedIn](https://github.com/shobeir/GraphiPy/blob/master/demo/LinkedinDemo.ipynb)
 - [Pinterest](https://github.com/shobeir/GraphiPy/blob/master/demo/PinterestDemo.ipynb)
@@ -29,4 +42,6 @@ For more information on how to use GraphiPy, please see one of the notebooks:
 - [Twitter](https://github.com/shobeir/GraphiPy/blob/master/demo/TwitterDemo.ipynb)
 - [YouTube](https://github.com/shobeir/GraphiPy/blob/master/demo/YoutubeDemo.ipynb)
 
-GraphiPy can also export data as CSV files and visualize the graphs using NetworkX. For more information, see [this notebook](https://github.com/shobeir/GraphiPy/blob/master/demo/DataExportDemo.ipynb)
+GraphiPy can also export data as CSV files and visualize the graphs using NetworkX. It is also possible to convert from one graph type to another (e.g. from Pandas to Neo4j and vice versa). For more information, see [this notebook](https://github.com/shobeir/GraphiPy/blob/master/demo/DataExportDemo.ipynb)
+
+
