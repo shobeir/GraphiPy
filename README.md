@@ -53,5 +53,46 @@ The csv files exported from Graphify can be directly imported to Gephi.
 ### Data of 20 youtube videos with keyword "dota2"
 ![Data of 20 youtube videos with keyword "dota2"](https://user-images.githubusercontent.com/25040463/48648253-85e33080-e9a3-11e8-9412-cf0f2bd286de.png)
 
-
+## Folder Structure
+```
+.
+├── demo
+|   ├── DataExportDemo.ipynb
+|   ├── FacebookDemo.ipynb
+|   ├── LinkedinDemo.ipynb
+|   ├── PinterestDemo.ipynb
+|   ├── RedditDemo.ipynb
+|   ├── TumblrDemo.ipynb
+|   ├── TwitterDemo.ipynb
+|   └── YoutubeDemo.ipynb
+├── graphipy
+|   ├── api
+|   |   ├── _init_.py
+|   |   ├── facebook_api.py	
+|   |   ├── linkedin_api.py	
+|   |   ├── pinterest_api.py
+|   |   ├── reddit_api.py	
+|   |   ├── tumblr_api.py	
+|   |   ├── twitter_api.py	
+|   |   └── youtube_api.py	
+|   ├── graph
+|   |   ├── _init_.py
+|   |   ├── graph_base.py
+|   |   ├── graph_dict.py
+|   |   ├── graph_neo4j.py
+|   |   └── graph_pandas.py
+|   ├── _init_.py
+|   ├── exportnx.py
+|   └── graphipy.py
+├── .gitignore 
+├── README.md
+└── requirements.txt
+```
+| Folder/Filename | Description |
+|----|:---:|
+| demo | Jupyter notebooks explaining how to use the library in detail |
+| graphipy | The major directory of the library containing classes for all social media platforms, graph data structure and exporting functionalities |
+| graphipy/api | Class definitions for all social media platforms, including fetch functions and customized nodes and edges  |
+| graphipy/graph | Definitions of the graph data structure implemented with dictionary, Pandas and Neo4J  |
+| requirements.txt | All dependencies  |
 
