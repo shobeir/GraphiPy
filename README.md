@@ -27,7 +27,6 @@ To provide easy access, the type of the nodes and edges are stored as keys while
 
 - [Pandas Graph](https://github.com/shobeir/GraphiPy/blob/master/graphipy/graph/graph_pandas.py)
 Similar to the Dictionary Graph, the type of nodes and edges are stored as keys and the dataframes are stored as values.
-
 Since inserting rows one by one into the dataframe takes polynomial time, the implementation uses the help of Python's dictionary. After a certain number of elements are inside the dictionaries, all of them are converted into dataframes and appended into the existing dataframes.
 
 - [Neo4j Graph](https://github.com/shobeir/GraphiPy/blob/master/graphipy/graph/graph_neo4j.py)
@@ -49,10 +48,8 @@ GraphiPy can also export data as CSV files and visualize the graphs using Networ
 
 - Gephi Support: 
 [Gephi](https://gephi.org/) is an open-source software for network visualization and analysis. It helps data analysts to intuitively reveal patterns and trends, highlight outliers and tells stories with their data.
-
 The csv files exported from Graphify can be directly imported to Gephi.
-
-Data visualization (via Gephi) of 20 youtube videos with keyword "dota2" extracted via GraphiPy 
+The below figure shows data visualization (via Gephi) of 20 youtube videos with keyword "dota2" extracted via GraphiPy 
 ![Data of 20 youtube videos with keyword "dota2"](https://user-images.githubusercontent.com/25040463/48648253-85e33080-e9a3-11e8-9412-cf0f2bd286de.png)
 
 ## Folder Structure
