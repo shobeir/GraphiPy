@@ -12,6 +12,17 @@ Currently, GraphiPy provides support to 7 different websites:
 - [Twitter](https://developer.twitter.com/en/docs)
 - [YouTube](https://developers.google.com/youtube/v3/)
 
+## Installation
+GraphiPy is uploaded on PyPI and can be found [here](pypi.org/project/GraphiPy).
+
+To install GraphiPy, run
+```pip install GraphiPy```
+
+Please note that GraphiPy does not support Python 2 and only works on Python 3.
+
+## Video Demonstration
+[![GraphiPy Video](http://img.youtube.com/vi/k4szAjYkiE4/0.jpg)](http://www.youtube.com/watch?v=k4szAjYkiE4).
+
 ## Data Strcuture
 GraphiPy acts like a Graph in which all the different information are stored as nodes and connections between different nodes will be stored as edges.
 
