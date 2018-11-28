@@ -1,4 +1,4 @@
-<img src="https://yt3.ggpht.com/-E1RbjCNoU_4/AAAAAAAAAAI/AAAAAAAAAFA/aL_icowG2fg/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg" width="100">
+<img src="https://yt3.ggpht.com/-E1RbjCNoU_4/AAAAAAAAAAI/AAAAAAAAAFA/aL_icowG2fg/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg" width="150">
 
 # GraphiPy
 A Universal Social Data Extractor
