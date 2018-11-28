@@ -29,6 +29,9 @@ class NeoGraph(BaseGraph):
                 labels.append(record["type(n)"])
         return labels
 
+    def get_node(self, label_attribute):
+        return self.execute("MATCH (n) WHERE n.label_attribute = '" + label_attribute + "' RETURN n")
+
     def export_helper(self, labels, _type, prefix):
         """ helper function for export """
 
@@ -119,7 +122,8 @@ class NeoGraph(BaseGraph):
             os.mkdir(export_path_node)
 
         for key in node_option:
-            query = ["MATCH (n:`", key.lower(), "`) RETURN "]
+            query = ["MATCH (n) WHERE n.label_attribute = '",
+                     key.lower(), "' RETURN "]
             csv_file = open(export_path_node + key + ".csv", "w")
             if not node_option[key]:
                 query.append("n")
