@@ -1,7 +1,11 @@
+# GraphiPy
+
+A Universal Social Data Extractor
+
+
 <img src="https://yt3.ggpht.com/-E1RbjCNoU_4/AAAAAAAAAAI/AAAAAAAAAFA/aL_icowG2fg/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg" width="150">
 
-# GraphiPy
-A Universal Social Data Extractor
+
 
 GraphiPy simplifies the extraction of data from different social media websites. Instead of having to study the different APIs of each website, just provide the API keys and use GraphiPy!
 
