@@ -19,7 +19,7 @@ Currently, GraphiPy provides support to 7 different websites:
 - [YouTube](https://developers.google.com/youtube/v3/)
 
 ## Installation
-GraphiPy is uploaded on PyPI and can be found [here](pypi.org/project/GraphiPy).
+GraphiPy is uploaded on PyPI and can be found [here](https://pypi.org/project/GraphiPy/).
 
 To install GraphiPy, run
 ```pip install GraphiPy```
