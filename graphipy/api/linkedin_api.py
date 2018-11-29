@@ -144,7 +144,7 @@ class Linkedin:
             position_node = LinkedinPosition(position)
             graph.create_node(position_node)
             graph.create_edge(Edge(str(profile["id"]),str(position["id"]), "hasPosition"))
-        return graph
+
 
 
     def fetch_self_node(self, graph):
@@ -158,5 +158,3 @@ class Linkedin:
         profile_node = LinkedinProfile(profile)
         graph.create_node(profile_node)
         graph = self.process_positions(graph, profile)
-
-        return graph

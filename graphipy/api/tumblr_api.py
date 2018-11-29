@@ -28,7 +28,7 @@ class Tumblr:
         blog = self.tumblr.blog_info(blog_name)['blog']
         graph.create_node(Blog(blog))
 
-        return graph
+
 
     def fetch_blogs_following(
             self,
@@ -61,7 +61,7 @@ class Tumblr:
             print(error)
             print(blogs_following_raw)
 
-        return graph
+
 
     def fetch_followers(
             self,
@@ -93,7 +93,7 @@ class Tumblr:
             print(error)
             print(followers_raw)
 
-        return graph
+
 
     def fetch_published_posts(
         self,
@@ -128,7 +128,7 @@ class Tumblr:
             print(error)
             print(published_posts_raw)
 
-        return graph
+
 
     def fetch_liked_posts(
         self,
@@ -166,7 +166,7 @@ class Tumblr:
             print(error)
             print(liked_posts_raw)
 
-        return graph
+
 
     def fetch_posts_tagged(
         self,
@@ -194,7 +194,7 @@ class Tumblr:
             graph.create_node(Blog(blog))
             graph.create_edge(Edge(blog['name'], str(post_tagged['id']), "PUBLISHED"))
 
-        return graph
+
 
 
 class Blog (Node):
@@ -308,10 +308,3 @@ class Post (Node):
         except KeyError as error:
             print(error)
             print(post)
-
-
-
-
-
-
-

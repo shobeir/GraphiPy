@@ -12,18 +12,18 @@ class Twitter:
 		self.token_secret = api["token_secret"]
 
 		bearer_token_credentials = self.consumer_key+':'+self.consumer_secret
-		
+
 		encoded_credentials = base64.b64encode(bearer_token_credentials.encode('utf-8')).decode('utf-8')
 		headers = {
 			'Authorization': 'Basic ' + encoded_credentials,
 			'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
 		}
-		url = "https://api.twitter.com/oauth2/token/?grant_type=client_credentials" 
+		url = "https://api.twitter.com/oauth2/token/?grant_type=client_credentials"
 		http = httplib2.Http()
 		response, content = http.request(url, method="POST", headers=headers)
 		content = json.loads(content.decode("utf-8"))
 		self.bearer_token = content["access_token"]
-	
+
 	def get_single_user_by_screenname(self, graph, screenname):
 		url = "https://api.twitter.com/1.1/users/show.json?screen_name=" + screenname
 		http = httplib2.Http()
@@ -60,7 +60,7 @@ class Twitter:
 				graph.create_node(original_tweet)
 				graph.create_edge(Edge(single_tweet.get_id(), original_tweet.get_id(), "QUOTE"))
 				graph.create_edge(Edge(original_tweet.get_id(), single_tweet.get_id(), "QUOTED BY"))
-		return graph
+
 
 	def fetch_tweet_by_id(self, graph, id):
 		url = "https://api.twitter.com/1.1/statuses/show.json?id=" + str(id)
@@ -76,16 +76,16 @@ class Twitter:
 		graph.create_node(creator)
 		graph.create_edge(Edge(tweet.get_id(), creator.get_id(), "CREATED_BY"))
 		graph.create_edge(Edge(creator.get_id(), tweet.get_id(), "CREATED"))
-		return graph
+
 
 	def fetch_user_by_screenname(self, graph, screenname):
 		user = self.get_single_user_by_screenname(graph, screenname)
-		graph.create_node(user) 
-		return graph
+		graph.create_node(user)
+
 
 	def fecth_followers_by_screenname(self, graph, screenname, limit=15):
 		user = self.get_single_user_by_screenname(graph, screenname)
-		graph.create_node(user) 
+		graph.create_node(user)
 
 		url = "https://api.twitter.com/1.1/followers/list.json?screen_name=" + screenname + "&count=" + str(limit)
 		http = httplib2.Http()
@@ -100,11 +100,11 @@ class Twitter:
 			graph.create_node(single_follower)
 			graph.create_edge(Edge(single_follower.get_id(), user.get_id(), "FOLLOW"))
 			graph.create_edge(Edge(user.get_id(), single_follower.get_id(), "FOLLOWED BY"))
-		return graph
+
 
 	def fecth_friends_by_screenname(self, graph, screenname, limit=15):
 		user = self.get_single_user_by_screenname(graph, screenname)
-		graph.create_node(user) 
+		graph.create_node(user)
 
 		url = "https://api.twitter.com/1.1/friends/list.json?screen_name=" + screenname + "&count=" + str(limit)
 		http = httplib2.Http()
@@ -119,7 +119,7 @@ class Twitter:
 			graph.create_node(single_friend)
 			graph.create_edge(Edge(single_friend.get_id(), user.get_id(), "FRIEND WITH"))
 			graph.create_edge(Edge(user.get_id(), single_friend.get_id(), "FRIEND WITH"))
-		return graph
+
 
 class TwitterTweet(Node):
 	def __init__(self, result):
@@ -174,4 +174,3 @@ class TwitterUser(Node):
 		self.profile_image_url = result["profile_image_url"]
 		self.profile_link_color = result["profile_link_color"]
 		self.profile_text_color = result["profile_text_color"]
-    

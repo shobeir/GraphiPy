@@ -185,7 +185,7 @@ class Youtube:
         :return: The resulting graph (which adds one ChannelNode)
         """
         graph.create_node(self.create_node_by_channel_id(channel_id))
-        return graph
+
 
     def fetch_videos_by_topic(self, graph, topic, maxResult=25):
         """
@@ -209,9 +209,9 @@ class Youtube:
                 video_id = search_result['id']['videoId']
                 graph.create_node(VideoNode(search_result))
                 graph.create_node(self.create_node_by_channel_id(channel_id))
-                graph.create_edge(Edge(channel_id, video_id, "createVideo"))
+                graph.create_edge(Edge(channel_id, video_id, "createvideo"))
 
-        return graph
+
 
     def fetch_video_by_id_with_comments(self, graph, video_id):
         """
@@ -233,7 +233,7 @@ class Youtube:
         # Add its author
         channel_id = response['items'][0]['snippet']['channelId']
         graph.create_node(self.create_node_by_channel_id(channel_id))
-        graph.create_edge(Edge(channel_id, video_id, "createVideo"))
+        graph.create_edge(Edge(channel_id, video_id, "createvideo"))
 
         # fetch its comments
         comments_results = self.youtube.commentThreads().list(
@@ -273,7 +273,7 @@ class Youtube:
                         Edge(reply_channel_id, reply_id, "comment"))
                     graph.create_edge(Edge(reply_id, video_id, "comment"))
 
-        return graph
+
 
     def get_authenticated_service():
       flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
@@ -301,7 +301,7 @@ class Youtube:
                 channel_id = search_result['snippet']['channelId']
                 graph.create_node(self.create_node_by_channel_id(channel_id))
 
-        return graph
+
 
     def fetch_playlists_by_topic(self, graph, topic, maxResult=25):
         """
@@ -328,7 +328,7 @@ class Youtube:
                 graph.create_edge(
                     Edge(channel_id, playlist_id, "createPlaylist"))
 
-        return graph
+
 
     def fetch_playlists_by_channel_id(self, graph, channel_id):
         """
@@ -349,7 +349,7 @@ class Youtube:
             graph.create_node(PlaylistNode(item))
             graph.create_edge(channel_id, playlist_id, "createPlaylist")
 
-        return graph
+
 
     def fetch_playlistItems_by_playlist_id(self, graph, playlist_id):
         """
@@ -366,5 +366,3 @@ class Youtube:
 
         for item in response.get('items', []):
             graph.create_node(VideoNode(item))
-
-        return graph

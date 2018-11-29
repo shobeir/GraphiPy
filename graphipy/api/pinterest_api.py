@@ -49,8 +49,8 @@ class Pinterest:
         result = self.get_single_user(username)
         user = PinterestUser(result["data"])
         graph.create_node(user)
-        return graph
- 
+
+
     # get the graph for a single board by board_url
     def fetch_pinterest_board_by_url(self, graph, board_url):
         board_result = self.get_single_board(board_url)
@@ -72,8 +72,8 @@ class Pinterest:
             graph.create_node(single_pin)
             graph.create_edge(Edge(board.get_id(), single_pin.get_id(), "HAS"))
             graph.create_edge(Edge(single_pin.get_id(), board.get_id(), "ON"))
-            
-        return graph
+
+
 
     # get the graph for a single pin by pin_id
     def fetch_pinterest_pin_by_id(self, graph, pin_id):
@@ -98,7 +98,7 @@ class Pinterest:
         graph.create_edge(Edge(pin.get_id(), board.get_id(), "ON"))
         graph.create_edge(Edge(board.get_id(), pin.get_id(), "HAS"))
 
-        return graph
+
 
     # get the graph for mine as user node
     def fetch_pinterest_my_usernode(self, graph):
@@ -111,9 +111,9 @@ class Pinterest:
         user = PinterestUser(result["data"])
         graph.create_node(user)
 
-        return graph
 
-    # get the graph of my boards 
+
+    # get the graph of my boards
     def fetch_pinterest_my_boards(self, graph):
         url = "https://api.pinterest.com/v1/me/?access_token=" + self.access_token + \
             "&fields=first_name%2Cid%2Clast_name%2Curl%2Cbio%2Caccount_type%2Ccounts%2Ccreated_at%2Cimage%2Cusername"
@@ -135,7 +135,7 @@ class Pinterest:
             graph.create_edge(Edge(board.get_id(), user.get_id(), "CREATED_BY"))
             graph.create_edge(Edge(user.get_id(), board.get_id(), "CREATED"))
 
-        return graph
+
 
     # get the graph of my pins
     def fetch_pinterest_my_pins(self, graph):
@@ -159,7 +159,7 @@ class Pinterest:
             graph.create_edge(Edge(pin.get_id(), user.get_id(), "CREATED_BY"))
             graph.create_edge(Edge(user.get_id(), pin.get_id(), "CREATED"))
 
-        return graph
+
 
     # get the graph of my followers
     def fetch_pinterest_my_followers(self, graph):
@@ -182,7 +182,7 @@ class Pinterest:
             graph.create_node(follower)
             graph.create_edge(Edge(user.get_id(), follower.get_id(), "FOLLOWED_BY"))
 
-        return graph
+
 
     # get the graph of my following users
     def fetch_pinterest_my_following_users(self, graph):
@@ -205,7 +205,7 @@ class Pinterest:
             graph.create_node(following)
             graph.create_edge(Edge(user.get_id(), following.get_id(), "FOLLOWING"))
 
-        return graph
+
 
     # get the graph of my following boards
     def fetch_pinterest_my_following_boards(self, graph):
@@ -246,7 +246,7 @@ class Pinterest:
                 graph.create_edge(Edge(followingboard.get_id(), single_pin.get_id(), "HAS"))
                 graph.create_edge(Edge(single_pin.get_id(), followingboard.get_id(), "ON"))
 
-        return graph
+
 
 
 # User node of Pinterest

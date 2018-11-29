@@ -87,7 +87,7 @@ class Reddit:
             subreddit = response["data"]
             graph.create_node(Subreddit(subreddit))
 
-        return graph
+
 
     def fetch_subreddits_by_topic(
         self,
@@ -115,7 +115,7 @@ class Reddit:
             subreddit = subreddit["data"]
             graph.create_node(Subreddit(subreddit))
 
-        return graph
+
 
     def fetch_subreddit_submissions(
         self,
@@ -194,7 +194,7 @@ class Reddit:
             graph.create_edge(
                 Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
 
-        return graph
+
 
     def fetch_submission_comments(
         self,
@@ -279,7 +279,7 @@ class Reddit:
                 graph.create_edge(
                     Edge(comment["parent_id"][3:], comment["id"], "HAS_REPLY"))
 
-        return graph
+
 
     def fetch_redditor_comments(
         self,
@@ -327,7 +327,7 @@ class Reddit:
             graph.create_edge(
                 Edge(comment["id"], redditor["id"], "COMMENT_CREATED_BY"))
 
-        return graph
+
 
     def fetch_redditor_submissions(
         self,
@@ -406,7 +406,7 @@ class Reddit:
             graph.create_edge(
                 Edge(subreddit["id"], submission["id"], "HAS_SUBMISSION"))
 
-        return graph
+
 
 
 class Redditor(Node):
