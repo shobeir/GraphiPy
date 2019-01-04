@@ -1,7 +1,9 @@
+
+[![Downloads](https://pepy.tech/badge/graphipy)](https://pepy.tech/project/graphipy) [![Downloads](https://pepy.tech/badge/graphipy/month)](https://pepy.tech/project/graphipy) [![Downloads](https://pepy.tech/badge/graphipy/week)](https://pepy.tech/project/graphipy)
+
 # GraphiPy
 
 A Universal Social Data Extractor
-
 
 <img src="https://yt3.ggpht.com/-E1RbjCNoU_4/AAAAAAAAAAI/AAAAAAAAAFA/aL_icowG2fg/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg" width="150">
 
