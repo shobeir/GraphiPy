@@ -4,11 +4,10 @@
 
 A Universal Social Data Extractor
 
-GraphiPy simplifies the extraction of data from different social media websites. Instead of having to study the different APIs of each website, just provide the API keys and use GraphiPy!
-
 [![PyPI version](https://badge.fury.io/py/GraphiPy.svg)](https://badge.fury.io/py/GraphiPy) 
 [![Downloads](https://pepy.tech/badge/graphipy)](https://pepy.tech/project/graphipy)
 
+GraphiPy simplifies the extraction of data from different social media websites. Instead of having to study the different APIs of each website, just provide the API keys and use GraphiPy!
 
 Currently, GraphiPy provides support to 7 different websites:
 - [Reddit](https://www.reddit.com/dev/api/)
