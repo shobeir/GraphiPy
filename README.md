@@ -1,15 +1,14 @@
-
-[![Downloads](https://pepy.tech/badge/graphipy)](https://pepy.tech/project/graphipy) [![Downloads](https://pepy.tech/badge/graphipy/month)](https://pepy.tech/project/graphipy) [![Downloads](https://pepy.tech/badge/graphipy/week)](https://pepy.tech/project/graphipy)
+<img align="left" src="https://yt3.ggpht.com/-E1RbjCNoU_4/AAAAAAAAAAI/AAAAAAAAAFA/aL_icowG2fg/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg" width="150">
 
 # GraphiPy
 
 A Universal Social Data Extractor
 
-<img src="https://yt3.ggpht.com/-E1RbjCNoU_4/AAAAAAAAAAI/AAAAAAAAAFA/aL_icowG2fg/s288-mo-c-c0xffffffff-rj-k-no/photo.jpg" width="150">
-
-
-
 GraphiPy simplifies the extraction of data from different social media websites. Instead of having to study the different APIs of each website, just provide the API keys and use GraphiPy!
+
+[![PyPI version](https://badge.fury.io/py/GraphiPy.svg)](https://badge.fury.io/py/GraphiPy) 
+[![Downloads](https://pepy.tech/badge/graphipy)](https://pepy.tech/project/graphipy)
+
 
 Currently, GraphiPy provides support to 7 different websites:
 - [Reddit](https://www.reddit.com/dev/api/)
