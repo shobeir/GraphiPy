@@ -6,6 +6,7 @@ A Universal Social Data Extractor
 
 [![PyPI version](https://badge.fury.io/py/GraphiPy.svg)](https://badge.fury.io/py/GraphiPy) 
 [![Downloads](https://pepy.tech/badge/graphipy)](https://pepy.tech/project/graphipy)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/shobeir/GraphiPy/master?filepath=%2Fdemo%2F)
 
 GraphiPy simplifies the extraction of data from different social media websites. Instead of having to study the different APIs of each website, just provide the API keys and use GraphiPy!
 
