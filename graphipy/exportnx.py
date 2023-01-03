@@ -32,7 +32,7 @@ class ExportNX:
 
             for index, row in df.iterrows():
                 _id = row["Id"]
-                node = nx_graph.node[_id]
+                node = nx_graph.nodes[_id]
 
                 for attr in row.keys():
                     node[attr] = row[attr]
@@ -69,7 +69,7 @@ class ExportNX:
 
             for key in nodes.keys():
                 node = vars(nodes[key])
-                nx_node = nx_graph.node[key]
+                nx_node = nx_graph.nodes[key]
 
                 for attr in node.keys():
                     nx_node[attr] = node[attr]
@@ -105,7 +105,7 @@ class ExportNX:
                 open(nodes_path + filename, encoding="utf-8"))
             for node in reader:
                 node_id = node["Id"]
-                nx_node = nx_graph.node[node_id]
+                nx_node = nx_graph.nodes[node_id]
                 for attr in node.keys():
                     nx_node[attr] = node[attr]
 
@@ -135,7 +135,7 @@ class ExportNX:
         for node in nodes:
             node = node["n"]
             node_id = node["Id"]
-            nx_node = nx_graph.node[node_id]
+            nx_node = nx_graph.nodes[node_id]
             for attr in node.keys():
                 nx_node[attr] = node[attr]
 
